@@ -30,8 +30,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload.data
 }
 
+const demoProjectId = 1
+
 export async function loadAssignmentWorkspace() {
-  return request<WorkspaceState>('/api/mobile/workspace')
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}`)
 }
 
 export async function bootstrapAssignmentWorkspace(input: {
@@ -42,9 +44,16 @@ export async function bootstrapAssignmentWorkspace(input: {
   semester: string
   dueDate: string
 }) {
-  return request<WorkspaceState>('/api/mobile/workspace/bootstrap', {
+  return request<WorkspaceState>('/api/projects', {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      name: input.teamName,
+      courseName: input.courseName,
+      semester: input.semester,
+      dueDate: input.dueDate,
+      ownerName: input.name,
+      ownerEmail: input.email,
+    }),
   })
 }
 
@@ -66,21 +75,21 @@ export async function createAssignmentTask(input: {
   dueDate: string
   blockers: string[]
 }) {
-  return request<WorkspaceState>('/api/mobile/tasks', {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}/tasks`, {
     method: 'POST',
     body: JSON.stringify(input),
   })
 }
 
 export async function updateAssignmentTaskStatus(taskId: number, status: TaskStatus) {
-  return request<WorkspaceState>(`/api/mobile/tasks/${taskId}/status`, {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}/tasks/${taskId}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
   })
 }
 
 export async function deleteAssignmentTask(taskId: number) {
-  return request<WorkspaceState>(`/api/mobile/tasks/${taskId}`, {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}/tasks/${taskId}`, {
     method: 'DELETE',
   })
 }
@@ -94,14 +103,14 @@ export async function createAssignmentMeeting(input: {
   actionOwner: string
   createTasks: boolean
 }) {
-  return request<WorkspaceState>('/api/mobile/meetings', {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}/meetings`, {
     method: 'POST',
     body: JSON.stringify(input),
   })
 }
 
 export async function generateAssignmentReport() {
-  return request<WorkspaceState>('/api/mobile/reports', {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}/reports`, {
     method: 'POST',
   })
 }
@@ -112,30 +121,31 @@ export async function updateAssignmentTeam(input: {
   semester: string
   dueDate: string
 }) {
-  return request<WorkspaceState>('/api/mobile/team', {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   })
 }
 
 export async function regenerateAssignmentInviteCode() {
-  return request<WorkspaceState>('/api/mobile/team/regenerate-invite', {
+  await request(`/api/projects/${demoProjectId}/invite-links`, {
     method: 'POST',
   })
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}`)
 }
 
 export async function createAssignmentMember(input: {
   name: string
   role: MemberRole
 }) {
-  return request<WorkspaceState>('/api/mobile/members', {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}/members`, {
     method: 'POST',
     body: JSON.stringify(input),
   })
 }
 
 export async function deleteAssignmentMember(memberId: number) {
-  return request<WorkspaceState>(`/api/mobile/members/${memberId}`, {
+  return request<WorkspaceState>(`/api/projects/${demoProjectId}/members/${memberId}`, {
     method: 'DELETE',
   })
 }
