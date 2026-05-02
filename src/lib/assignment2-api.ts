@@ -19,7 +19,7 @@ import {
   type RisksResult,
   type TaskSummary,
   type UserMe,
-} from './api'
+} from '../apis'
 import { buildActivity, createEmptyWorkspace } from './workspace-store'
 import type { Activity, Meeting, Report, RiskSeverity, RiskSignal, Task, TaskStatus } from '../types/shell'
 import type { Member, WorkspaceState } from '../types/workspace'
