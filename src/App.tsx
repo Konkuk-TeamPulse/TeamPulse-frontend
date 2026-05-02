@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { apiBaseUrl, loadHealth } from './lib/api'
+import { apiBaseUrl, loadHealth } from './apis'
 import {
   buildActivity,
   buildMeeting,
