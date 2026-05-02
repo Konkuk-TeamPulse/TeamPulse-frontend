@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { loadHealth } from './lib/api'
+import { login, logout, signup } from './lib/api'
 import {
+  addAssignmentTaskDependency,
+  acceptAssignmentInvitation,
   bootstrapAssignmentWorkspace,
   createAssignmentMeeting,
-  createAssignmentMember,
   createAssignmentTask,
   deleteAssignmentMember,
   deleteAssignmentTask,
+  downloadAssignmentReport,
   generateAssignmentReport,
+  loadAssignmentMeetingDetail,
   loadAssignmentSampleWorkspace,
   loadAssignmentWorkspace,
+  refreshAssignmentRisks,
+  removeAssignmentTaskDependency,
   regenerateAssignmentInviteCode,
   resetAssignmentWorkspace,
+  updateAssignmentTask,
   updateAssignmentTaskStatus,
   updateAssignmentTeam,
 } from './lib/assignment2-api'
@@ -34,18 +40,13 @@ import {
   parseLines,
   compareTasks,
 } from './lib/utils'
-import type { HealthSummary, TaskStatus } from './types/shell'
+import type { TaskStatus } from './types/shell'
 import type { Member, WorkspaceState } from './types/workspace'
 
-// Components
 import { Layout } from './components/assignment2/Layout'
 import { Onboarding } from './components/assignment2/Onboarding'
-import { HomeView } from './components/assignment2/HomeView'
-import { TasksView } from './components/assignment2/TasksView'
-import { MeetingsView } from './components/assignment2/MeetingsView'
-import { ReportsView } from './components/assignment2/ReportsView'
-import { TeamView } from './components/assignment2/TeamView'
 import { Toast, type ToastType } from './components/assignment2/Toast'
+import { HomePage, MeetingsPage, ReportsPage, TasksPage, TeamPage } from './pages/assignment2'
 
 type ViewKey = 'home' | 'tasks' | 'meetings' | 'reports' | 'team'
 
@@ -59,7 +60,6 @@ const initialWorkspace = loadWorkspace()
 
 function App() {
   const [workspace, setWorkspace] = useState<WorkspaceState>(initialWorkspace)
-  const [health, setHealth] = useState<HealthSummary | null>(null)
   const [transport, setTransport] = useState<'api' | 'local'>('local')
   const [view, setView] = useState<ViewKey>('home')
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null)
@@ -85,16 +85,42 @@ function App() {
 
   useEffect(() => {
     let active = true
-    loadHealth().then((s) => active && setHealth(s))
     loadAssignmentWorkspace()
+      .then((w) => w.initialized ? refreshAssignmentRisks(w).catch(() => w) : w)
       .then((w) => {
         if (!active) return
         setTransport('api')
         setWorkspace(w)
+        const urgentRisk = w.risks.find((risk) => risk.severity !== 'INFO')
+        if (urgentRisk) {
+          showToast(`리스크 알림: ${urgentRisk.title}`, urgentRisk.severity === 'CRITICAL' ? 'error' : 'info')
+        }
       })
       .catch(() => active && setTransport('local'))
     return () => { active = false }
-  }, [])
+  }, [showToast])
+
+  useEffect(() => {
+    const inviteCode = window.location.pathname.match(/^\/invite\/([^/]+)/)?.[1]
+    if (!inviteCode) return
+
+    if (transport !== 'api') {
+      const timer = window.setTimeout(() => showToast('초대 수락은 로그인 후 사용할 수 있습니다.', 'info'), 0)
+      return () => window.clearTimeout(timer)
+    }
+
+    acceptAssignmentInvitation(inviteCode)
+      .then((nextWorkspace) => {
+        setWorkspace(nextWorkspace)
+        setView('home')
+        window.history.replaceState(null, '', '/')
+        showToast('초대를 수락했습니다.', 'success')
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : '초대 수락에 실패했습니다.'
+        showToast(message, 'error')
+      })
+  }, [transport, showToast])
 
   useEffect(() => {
     if (transport === 'local') saveWorkspace(workspace)
@@ -125,11 +151,47 @@ function App() {
           semester: setup.semester,
           dueDate: setup.dueDate,
           inviteCode: createInviteCode(),
+          inviteUrl: '',
         },
         members: [{ id: createId(), name: setup.name, role: 'LEADER' }],
         activities: [buildActivity(`${setup.teamName} 워크스페이스가 시작되었습니다.`, setup.name)],
       }),
       '워크스페이스가 생성되었습니다.'
+    )
+  }
+
+  const handleLogin = (input: Parameters<typeof login>[0]) => {
+    handleAction(
+      async () => {
+        await login(input)
+        setTransport('api')
+        return loadAssignmentWorkspace()
+      },
+      () => workspace,
+      '로그인되었습니다.'
+    )
+  }
+
+  const handleSignup = (input: Parameters<typeof signup>[0]) => {
+    handleAction(
+      async () => {
+        const user = await signup(input)
+        setTransport('api')
+        try {
+          return await loadAssignmentWorkspace()
+        } catch {
+          return {
+            ...createEmptyWorkspace(),
+            initialized: false,
+            user: {
+              name: user.name ?? input.name,
+              email: user.email,
+            },
+          }
+        }
+      },
+      () => workspace,
+      '회원가입되었습니다.'
     )
   }
 
@@ -151,11 +213,32 @@ function App() {
     setView('home')
   }
 
-  const addTask = (form: { title: string; owner: string; dueDate: string; blockers: string }) => {
+  const handleLogout = async () => {
+    if (!window.confirm('로그아웃하시겠습니까?')) return
+
+    if (transport === 'api') {
+      try {
+        await logout()
+      } catch {
+        // 토큰 만료 등으로 서버 로그아웃이 실패해도 로컬 세션은 정리합니다.
+      }
+    }
+
+    const empty = createEmptyWorkspace()
+    setTransport('local')
+    setWorkspace(empty)
+    saveWorkspace(empty)
+    setView('home')
+    showToast('로그아웃되었습니다.', 'success')
+  }
+
+  const addTask = (form: { title: string; owner: string; dueDate: string; blockers: string; precedingTaskId?: number }) => {
     handleAction(
       () => createAssignmentTask({ ...form, blockers: parseLines(form.blockers) }),
       () => {
-        const task = buildTask({ ...form, blockers: parseLines(form.blockers) })
+        const precedingTask = workspace.tasks.find((item) => item.id === form.precedingTaskId)
+        const blockers = precedingTask ? [precedingTask.title] : parseLines(form.blockers)
+        const task = buildTask({ ...form, blockers })
         return {
           ...workspace,
           tasks: [task, ...workspace.tasks],
@@ -179,6 +262,68 @@ function App() {
           ...workspace.activities,
         ],
       })
+    )
+  }
+
+  const editTask = (taskId: number, input: { title: string; owner: string; dueDate: string }) => {
+    handleAction(
+      () => updateAssignmentTask({ taskId, ...input }),
+      () => ({
+        ...workspace,
+        tasks: workspace.tasks.map((task) => task.id === taskId ? {
+          ...task,
+          title: input.title,
+          owner: input.owner,
+          dueDate: input.dueDate,
+        } : task),
+        activities: [buildActivity(`${input.title} 업무가 수정되었습니다.`, workspace.user.name), ...workspace.activities],
+      }),
+      '업무가 수정되었습니다.'
+    )
+  }
+
+  const addTaskDependency = (taskId: number, precedingTaskId: number) => {
+    if (taskId === precedingTaskId) {
+      showToast('자기 자신을 선행 업무로 설정할 수 없습니다.', 'error')
+      return
+    }
+
+    handleAction(
+      () => addAssignmentTaskDependency(taskId, precedingTaskId),
+      () => {
+        const precedingTask = workspace.tasks.find((task) => task.id === precedingTaskId)
+        if (!precedingTask) return workspace
+
+        return {
+          ...workspace,
+          tasks: workspace.tasks.map((task) => task.id === taskId ? {
+            ...task,
+            blockers: Array.from(new Set([...task.blockers, precedingTask.title])),
+          } : task),
+          activities: [buildActivity(`${workspace.tasks.find((task) => task.id === taskId)?.title}에 선행 업무가 추가되었습니다.`, workspace.user.name), ...workspace.activities],
+        }
+      },
+      '선행 업무가 추가되었습니다.'
+    )
+  }
+
+  const removeTaskDependency = (taskId: number, dependencyId: number) => {
+    handleAction(
+      () => removeAssignmentTaskDependency(taskId, dependencyId),
+      () => {
+        const dependencyTask = workspace.tasks.find((task) => task.id === dependencyId)
+        if (!dependencyTask) return workspace
+
+        return {
+          ...workspace,
+          tasks: workspace.tasks.map((task) => task.id === taskId ? {
+            ...task,
+            blockers: task.blockers.filter((blocker) => blocker !== dependencyTask.title),
+          } : task),
+          activities: [buildActivity('선행 업무가 삭제되었습니다.', workspace.user.name), ...workspace.activities],
+        }
+      },
+      '선행 업무가 삭제되었습니다.'
     )
   }
 
@@ -237,6 +382,20 @@ function App() {
     )
   }
 
+  const loadMeetingDetail = async (meetingId: number) => {
+    try {
+      const detail = await loadAssignmentMeetingDetail(meetingId)
+      setWorkspace((current) => ({
+        ...current,
+        meetings: current.meetings.map((meeting) => meeting.id === meetingId ? detail : meeting),
+      }))
+      showToast('회의록 상세를 불러왔습니다.', 'success')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '회의록 상세 조회에 실패했습니다.'
+      showToast(message, 'error')
+    }
+  }
+
   const generateReport = () => {
     handleAction(
       () => generateAssignmentReport(),
@@ -247,8 +406,32 @@ function App() {
           reports: [report, ...workspace.reports],
           activities: [buildActivity(`${report.label} 리포트가 생성되었습니다.`, workspace.user.name), ...workspace.activities],
         }
-      }
+      },
+      '리포트가 생성되었습니다.'
     )
+  }
+
+  const downloadReport = async (reportId: number) => {
+    if (transport !== 'api') {
+      showToast('PDF 다운로드는 서버 연결 상태에서 사용할 수 있습니다.', 'error')
+      return
+    }
+
+    try {
+      const blob = await downloadAssignmentReport(reportId)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'teampulse-report.pdf'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      showToast('PDF 다운로드를 시작했습니다.', 'success')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'PDF 다운로드에 실패했습니다.'
+      showToast(message, 'error')
+    }
   }
 
   const saveTeam = (team: { name: string; courseName: string; semester: string; dueDate: string }) => {
@@ -258,17 +441,6 @@ function App() {
         ...workspace,
         team: { ...workspace.team, ...team },
         activities: [buildActivity('팀 정보가 업데이트되었습니다.', workspace.user.name), ...workspace.activities],
-      })
-    )
-  }
-
-  const addMember = (m: { name: string; role: Member['role'] }) => {
-    handleAction(
-      () => createAssignmentMember(m),
-      () => ({
-        ...workspace,
-        members: [...workspace.members, { id: createId(), ...m }],
-        activities: [buildActivity(`${m.name}님이 팀에 합류했습니다.`, workspace.user.name), ...workspace.activities],
       })
     )
   }
@@ -292,11 +464,19 @@ function App() {
   const regenerateInvite = () => {
     handleAction(
       () => regenerateAssignmentInviteCode(),
-      () => ({
-        ...workspace,
-        team: { ...workspace.team, inviteCode: createInviteCode() },
-        activities: [buildActivity('초대 코드가 재생성되었습니다.', workspace.user.name), ...workspace.activities],
-      })
+      () => {
+        const inviteCode = createInviteCode()
+        return {
+          ...workspace,
+          team: {
+            ...workspace.team,
+            inviteCode,
+            inviteUrl: `${window.location.origin}/invite/${inviteCode}`,
+          },
+          activities: [buildActivity('초대 링크가 생성되었습니다.', workspace.user.name), ...workspace.activities],
+        }
+      },
+      '초대 링크가 생성되었습니다.'
     )
   }
 
@@ -305,10 +485,9 @@ function App() {
       <>
         <Onboarding 
           onStart={startWorkspace}
+          onLogin={handleLogin}
+          onSignup={handleSignup}
           onLoadSample={loadSample}
-          healthStatus={health?.status}
-          transport={transport}
-          apiBaseUrl={'/api'}
           showToast={showToast}
         />
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -324,17 +503,29 @@ function App() {
       teamName={workspace.team.name}
       courseName={workspace.team.courseName}
       onReset={resetWorkspace}
-      healthStatus={health?.status}
-      transport={transport}
+      onLogout={handleLogout}
+      risks={workspace.risks}
     >
-      {view === 'home' && <HomeView workspace={workspace} tasks={tasks} completion={completion} formatDate={formatDate} />}
+      {view === 'home' && (
+        <HomePage
+          workspace={workspace}
+          tasks={tasks}
+          completion={completion}
+          formatDate={formatDate}
+          onCreateInviteLink={regenerateInvite}
+        />
+      )}
       {view === 'tasks' && (
-        <TasksView 
+        <TasksPage 
           grouped={grouped}
           memberNames={memberNames}
           defaultOwner={defaultOwner}
           onAddTask={addTask}
+          tasks={tasks}
           onUpdateStatus={updateTaskStatus}
+          onEditTask={editTask}
+          onAddDependency={addTaskDependency}
+          onRemoveDependency={removeTaskDependency}
           onRemoveTask={removeTask}
           formatDate={formatDate}
           statusLabels={statusLabels}
@@ -342,21 +533,28 @@ function App() {
         />
       )}
       {view === 'meetings' && (
-        <MeetingsView 
+        <MeetingsPage 
           meetings={workspace.meetings}
           memberNames={memberNames}
           defaultOwner={defaultOwner}
           onAddMeeting={addMeeting}
+          onLoadMeetingDetail={loadMeetingDetail}
           formatDate={formatDate}
           showToast={showToast}
         />
       )}
-      {view === 'reports' && <ReportsView workspace={workspace} onGenerateReport={generateReport} showToast={showToast} />}
+      {view === 'reports' && (
+        <ReportsPage
+          workspace={workspace}
+          onGenerateReport={generateReport}
+          onDownloadReport={downloadReport}
+          showToast={showToast}
+        />
+      )}
       {view === 'team' && (
-        <TeamView 
+        <TeamPage 
           workspace={workspace}
           onSaveTeam={saveTeam}
-          onAddMember={addMember}
           onRemoveMember={removeMember}
           onRegenerateInvite={regenerateInvite}
           showToast={showToast}

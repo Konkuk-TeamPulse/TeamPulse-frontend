@@ -19,6 +19,8 @@ export type TeamProfile = {
   semester: string
   dueDate: string
   inviteCode: string
+  inviteUrl?: string
+  inviteExpiredAt?: string
 }
 
 export type WorkspaceState = {
