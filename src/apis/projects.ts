@@ -7,6 +7,7 @@ import type {
   ProjectDetail,
   ProjectSummary,
   ProjectUpdateResult,
+  BackendRisk,
   RisksResult,
 } from './types'
 
@@ -37,7 +38,7 @@ export const projectApi = {
     return requestJson<DashboardResult>(`/api/projects/${projectId}/dashboard`, {}, false)
   },
   risks(projectId: number) {
-    return requestJson<RisksResult>(`/api/projects/${projectId}/risks`)
+    return requestJson<RisksResult | BackendRisk[]>(`/api/projects/${projectId}/risks`)
   },
   activityLogs(projectId: number) {
     return requestJson<ActivityLog[]>(`/api/projects/${projectId}/activity-logs`)
