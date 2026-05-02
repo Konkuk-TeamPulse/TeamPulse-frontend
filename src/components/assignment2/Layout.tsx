@@ -1,5 +1,5 @@
-import { useState, useEffect, type ReactNode } from 'react'
-import { Pill } from './Common'
+import type { ReactNode } from 'react'
+import type { RiskSignal } from '../../types/shell'
 
 type ViewKey = 'home' | 'tasks' | 'meetings' | 'reports' | 'team'
 
@@ -11,80 +11,145 @@ interface LayoutProps {
   teamName: string
   courseName: string
   onReset: () => void
-  healthStatus?: string
-  transport: 'api' | 'local'
+  onLogout: () => void
+  risks: RiskSignal[]
 }
 
-const views: Array<{ key: ViewKey; label: string; icon: string }> = [
-  { key: 'home', label: '홈', icon: '🏠' },
-  { key: 'tasks', label: '할 일', icon: '📋' },
-  { key: 'meetings', label: '회의', icon: '🤝' },
-  { key: 'reports', label: '리포트', icon: '📊' },
-  { key: 'team', label: '팀', icon: '👥' },
+const views: Array<{ key: ViewKey; label: string; mark: string }> = [
+  { key: 'home', label: '대시보드', mark: '홈' },
+  { key: 'tasks', label: '업무', mark: '업' },
+  { key: 'meetings', label: '회의록', mark: '회' },
+  { key: 'reports', label: '리포트', mark: '리' },
+  { key: 'team', label: '팀 관리', mark: '팀' },
 ]
 
-export function Layout({ children, view, setView, userName, teamName, courseName, onReset, healthStatus, transport }: LayoutProps) {
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
-
-  useEffect(() => {
-    const onFocus = (e: FocusEvent) => {
-      const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        setIsKeyboardVisible(true)
-      }
-    }
-    const onBlur = () => setIsKeyboardVisible(false)
-
-    window.addEventListener('focusin', onFocus)
-    window.addEventListener('focusout', onBlur)
-    return () => {
-      window.removeEventListener('focusin', onFocus)
-      window.removeEventListener('focusout', onBlur)
-    }
-  }, [])
+export function Layout({ children, view, setView, userName, teamName, courseName, onReset, onLogout, risks }: LayoutProps) {
+  const riskAlerts = risks.filter((risk) => risk.severity !== 'INFO')
 
   return (
-    <div className="flex min-h-screen flex-col bg-paper text-ink pb-safe">
-      <header className="sticky top-0 z-10 border-b border-black/5 bg-white/80 px-4 py-4 backdrop-blur-md sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div>
-            <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-rust opacity-80">{teamName} / {courseName}</p>
-            <h1 className="font-display text-xl font-bold tracking-tight">{userName}님의 워크스페이스</h1>
-          </div>
-          <div className="hidden items-center gap-3 sm:flex">
-             <Pill tone={healthStatus === 'UP' ? 'good' : 'muted'}>{healthStatus === 'UP' ? '서버 연결됨' : '오프라인'}</Pill>
-             <Pill tone={transport === 'api' ? 'good' : 'muted'}>{transport === 'api' ? '클라우드' : '로컬'}</Pill>
-             <button type="button" className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-bold transition active:scale-95" onClick={onReset}>초기화</button>
-          </div>
+    <div className="min-h-screen bg-paper text-ink">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[224px] border-r border-slate-200 bg-white lg:block">
+        <div className="flex h-14 items-center gap-3 border-b border-slate-200 px-5">
+          <div className="grid h-8 w-8 place-items-center rounded-md bg-forest text-sm font-extrabold text-white">TP</div>
+          <strong className="text-lg font-extrabold tracking-tight text-forest">TeamPulse</strong>
         </div>
-      </header>
 
-      <main className={`flex-1 px-4 py-6 sm:px-6 lg:px-8 ${isKeyboardVisible ? 'pb-10' : 'pb-32'}`}>
-        <div className="mx-auto max-w-7xl">
+        <nav className="space-y-1 px-4 py-6">
+          {views.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={[
+                'flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold transition',
+                view === item.key ? 'bg-mist text-forest' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+              ].join(' ')}
+              onClick={() => setView(item.key)}
+            >
+              <span className="grid h-5 w-5 place-items-center rounded text-[0.65rem] font-bold">{item.mark}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 border-t border-slate-200 p-5">
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-slate-900 text-sm font-bold text-white">
+              {userName.charAt(0) || 'U'}
+            </div>
+            <div className="min-w-0">
+              <strong className="block truncate text-sm font-bold text-slate-900">{userName}</strong>
+              <span className="block text-xs font-medium text-slate-500">TeamPulse</span>
+            </div>
+          </div>
+          <button type="button" className="mt-4 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50" onClick={onLogout}>
+            로그아웃
+          </button>
+        </div>
+      </aside>
+
+      <div className="lg:pl-[224px]">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-slate-900">
+              프로젝트 대시보드: <span className="font-medium text-slate-500">{teamName || courseName}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={onReset}>초기화</button>
+            <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 lg:hidden" onClick={onLogout}>로그아웃</button>
+            <button type="button" className="rounded-full bg-forest px-4 py-2 text-xs font-bold text-white shadow-sm" onClick={() => setView('tasks')}>+ 새 업무</button>
+          </div>
+        </header>
+
+        <main className="px-4 py-6 sm:px-6 lg:px-8">
+          <RiskAlertPanel risks={riskAlerts} />
           {children}
-        </div>
-      </main>
+        </main>
 
-      {!isKeyboardVisible && (
-        <nav className="fixed bottom-6 left-1/2 z-20 w-[90%] max-w-md -translate-x-1/2 rounded-[2rem] border border-black/10 bg-white/90 p-2 shadow-2xl backdrop-blur-xl sm:bottom-8 sm:w-full animate-[rise_0.3s_ease-out]">
-          <div className="flex items-center justify-around">
+        <nav className="fixed bottom-4 left-4 right-4 z-30 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur lg:hidden">
+          <div className="grid grid-cols-5 gap-1">
             {views.map((item) => (
               <button
                 key={item.key}
                 type="button"
                 className={[
-                  'flex flex-col items-center gap-1 rounded-[1.5rem] px-4 py-2 transition-all duration-300',
-                  view === item.key ? 'bg-forest text-paper scale-110 shadow-lg' : 'text-black/40 hover:text-black/60'
+                  'rounded-lg px-2 py-2 text-[0.68rem] font-bold',
+                  view === item.key ? 'bg-forest text-white' : 'text-slate-500',
                 ].join(' ')}
                 onClick={() => setView(item.key)}
               >
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-[0.65rem] font-bold uppercase tracking-wider">{item.label}</span>
+                {item.label}
               </button>
             ))}
           </div>
         </nav>
-      )}
+      </div>
     </div>
+  )
+}
+
+function RiskAlertPanel({ risks }: { risks: RiskSignal[] }) {
+  if (!risks.length) {
+    return (
+      <section className="mb-5 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-extrabold text-emerald-800">리스크 알림</p>
+            <p className="mt-1 text-xs font-medium text-emerald-700">현재 감지된 위험 신호가 없습니다.</p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-700">안정</span>
+        </div>
+      </section>
+    )
+  }
+
+  const mostSevere = risks.some((risk) => risk.severity === 'CRITICAL') ? '위험' : '주의'
+  const panelClass = mostSevere === '위험'
+    ? 'border-rose-100 bg-rose-50 text-rose-800'
+    : 'border-amber-100 bg-amber-50 text-amber-800'
+
+  return (
+    <section className={`mb-5 rounded-lg border px-4 py-4 ${panelClass}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-extrabold">리스크 알림</p>
+          <p className="mt-1 text-xs font-semibold opacity-80">{risks.length}개의 위험 신호가 감지되었습니다.</p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold">{mostSevere}</span>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {risks.slice(0, 4).map((risk) => (
+          <article key={risk.id} className="rounded-lg bg-white/80 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <strong className="text-sm font-extrabold">{risk.title}</strong>
+              <span className="text-[0.68rem] font-bold">{risk.severity === 'CRITICAL' ? '위험' : '주의'}</span>
+            </div>
+            <p className="mt-2 text-xs font-medium leading-5 opacity-80">{risk.body}</p>
+            {risk.action && <p className="mt-2 text-xs font-semibold leading-5">대응: {risk.action}</p>}
+          </article>
+        ))}
+      </div>
+    </section>
   )
 }
