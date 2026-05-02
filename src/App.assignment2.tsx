@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { login, logout, signup } from './lib/api'
+import { login, logout, signup } from './apis'
 import {
   addAssignmentTaskDependency,
   acceptAssignmentInvitation,
