@@ -9,6 +9,7 @@ import {
   taskApi,
   userApi,
   type ActivityLog,
+  type BackendRisk,
   type DashboardResult,
   type MemberSummary,
   type MeetingSummary,
@@ -390,7 +391,7 @@ async function loadWorkspaceByProject(projectId: number, knownUser?: UserMe, sum
       inviteUrl: '',
     },
     members: members.map(mapMember),
-    tasks: tasks.map(mapTask),
+    tasks: mapTasks(tasks),
     meetings: meetings.map(mapMeeting),
     activities: activities.map(mapActivity),
     reports: [],
@@ -422,18 +423,22 @@ function mapMember(member: MemberSummary): Member {
   }
 }
 
-function mapTask(task: TaskSummary): Task {
-  return {
+function mapTasks(tasks: TaskSummary[]): Task[] {
+  const titleById = new Map(tasks.map((task) => [task.taskId, task.title]))
+
+  return tasks.map((task) => ({
     id: task.taskId,
     title: task.title,
     owner: task.assigneeName,
     status: task.status,
     dueDate: task.dueDate,
     priority: task.status === 'DONE' ? 'LOW' : 'MEDIUM',
-    blockers: [],
+    blockers: (task.precedingTaskIds ?? [])
+      .map((taskId) => titleById.get(taskId))
+      .filter((title): title is string => Boolean(title)),
     next: [],
     note: '',
-  }
+  }))
 }
 
 function mapMeeting(meeting: MeetingSummary): Meeting {
@@ -456,7 +461,17 @@ function mapActivity(log: ActivityLog): Activity {
   }
 }
 
-function mapRisks(risks?: RisksResult, dashboard?: DashboardResult): RiskSignal[] {
+function mapRisks(risks?: RisksResult | BackendRisk[], dashboard?: DashboardResult): RiskSignal[] {
+  if (Array.isArray(risks)) {
+    return risks.map((risk) => ({
+      id: risk.id,
+      severity: risk.severity,
+      title: risk.title,
+      body: risk.body,
+      action: risk.action,
+    }))
+  }
+
   const source = risks?.risks ?? dashboard?.risks ?? []
 
   return source.map((risk, index) => ({
