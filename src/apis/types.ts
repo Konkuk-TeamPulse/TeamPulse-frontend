@@ -116,6 +116,7 @@ export type TaskSummary = {
   status: TaskStatus
   assigneeName: string
   dueDate: string
+  precedingTaskIds?: number[]
 }
 
 export type TaskUpdateRequest = Partial<TaskCreateRequest>
@@ -229,6 +230,14 @@ export type RisksResult = {
   projectId: number
   riskSummary: RiskSummary
   risks: RiskSignalResponse[]
+}
+
+export type BackendRisk = {
+  id: number
+  severity: 'CRITICAL' | 'WARNING' | 'INFO'
+  title: string
+  body: string
+  action: string
 }
 
 export type DashboardResult = RisksResult & {

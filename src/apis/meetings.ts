@@ -3,7 +3,7 @@ import type { MeetingCreateRequest, MeetingDetail, MeetingSummary } from './type
 
 export const meetingApi = {
   create(projectId: number, input: MeetingCreateRequest) {
-    return requestJson<MeetingSummary[]>(
+    return requestJson<Pick<MeetingSummary, 'meetingId' | 'title' | 'meetingDate'>>(
       `/api/projects/${projectId}/meetings`,
       {
         method: 'POST',
