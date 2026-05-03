@@ -71,7 +71,7 @@ export function Layout({ children, view, setView, userName, teamName, courseName
         </div>
       </aside>
 
-      <div className="lg:pl-[224px]">
+      <div className="min-w-0 lg:pl-[224px]">
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-slate-900">
@@ -86,7 +86,7 @@ export function Layout({ children, view, setView, userName, teamName, courseName
           </div>
         </header>
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8">
+        <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
           <RiskAlertPanel risks={riskAlerts} />
           {children}
         </main>

@@ -72,11 +72,36 @@ export function TaskStatusSummary({ tasks }: { tasks: Task[] }) {
   )
 }
 
-export function InviteLinkCard({ inviteUrl, inviteExpiredAt, onCreateInviteLink }: { inviteUrl: string; inviteExpiredAt?: string; onCreateInviteLink: () => void }) {
+export function InviteLinkCard({
+  inviteUrl,
+  inviteExpiredAt,
+  onCreateInviteLink,
+  showToast,
+}: {
+  inviteUrl: string
+  inviteExpiredAt?: string
+  onCreateInviteLink: () => void
+  showToast: (msg: string, type?: 'success' | 'error') => void
+}) {
   const inviteLink = inviteUrl || '초대 링크를 생성해주세요'
+  const hasInviteLink = Boolean(inviteUrl)
+
+  const copyInviteLink = async () => {
+    if (!inviteUrl) {
+      showToast('초대 링크를 먼저 생성해주세요.', 'error')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      showToast('초대 링크가 복사되었습니다.', 'success')
+    } catch {
+      showToast('초대 링크 복사에 실패했습니다.', 'error')
+    }
+  }
 
   return (
-    <article className="rounded-lg border border-teal-100 bg-mist p-5">
+    <article className="min-w-0 rounded-lg border border-teal-100 bg-mist p-5">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-extrabold text-slate-900">팀원 초대</h3>
         <button
@@ -87,9 +112,29 @@ export function InviteLinkCard({ inviteUrl, inviteExpiredAt, onCreateInviteLink 
           생성
         </button>
       </div>
-      <div className="mt-4 flex items-center gap-2 rounded-lg bg-white p-2 shadow-sm">
-        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-700">{inviteLink}</span>
-        <span className="rounded-md bg-forest px-2 py-1 text-[0.65rem] font-bold text-white">링크</span>
+      <div className="mt-4 flex min-w-0 items-center gap-2 rounded-lg bg-white p-2 shadow-sm">
+        <button
+          type="button"
+          className={[
+            'block min-w-0 flex-1 truncate rounded-md px-2 py-1 text-left text-xs font-semibold transition',
+            hasInviteLink ? 'text-slate-700 hover:bg-slate-50 active:scale-[0.99]' : 'cursor-not-allowed text-slate-400',
+          ].join(' ')}
+          onClick={copyInviteLink}
+          disabled={!hasInviteLink}
+        >
+          {inviteLink}
+        </button>
+        <button
+          type="button"
+          className={[
+            'rounded-md px-2 py-1 text-[0.65rem] font-bold text-white transition',
+            hasInviteLink ? 'bg-forest hover:bg-[#08283e]' : 'cursor-not-allowed bg-slate-300',
+          ].join(' ')}
+          onClick={copyInviteLink}
+          disabled={!hasInviteLink}
+        >
+          복사
+        </button>
       </div>
       {inviteExpiredAt && <p className="mt-3 text-xs font-semibold text-slate-500">만료 {inviteExpiredAt}</p>}
     </article>
