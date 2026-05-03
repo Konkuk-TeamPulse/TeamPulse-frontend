@@ -8,7 +8,6 @@ import {
   buildTask,
   createEmptyWorkspace,
   createInviteCode,
-  createSampleWorkspace,
   deriveRisks,
   loadWorkspace,
   saveWorkspace,
@@ -146,27 +145,6 @@ function App() {
       decisions: '',
       actions: '',
       actionOwner: name,
-      createTasks: true,
-    })
-  }
-
-  const loadSample = () => {
-    const sample = withDerived(createSampleWorkspace())
-    setWorkspace(sample)
-    setTeamForm({
-      name: sample.team.name,
-      courseName: sample.team.courseName,
-      semester: sample.team.semester,
-      dueDate: sample.team.dueDate,
-    })
-    setTaskForm({ title: '', owner: sample.members[0]?.name ?? '', dueDate: '', blockers: '' })
-    setMeetingForm({
-      title: '',
-      time: '',
-      agenda: '',
-      decisions: '',
-      actions: '',
-      actionOwner: sample.members[0]?.name ?? '',
       createTasks: true,
     })
   }
@@ -368,7 +346,6 @@ function App() {
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button type="button" className="rounded-2xl bg-forest px-4 py-3 text-sm font-semibold text-paper" onClick={startWorkspace}>Create workspace</button>
-              <button type="button" className="rounded-2xl border border-black/10 bg-paper px-4 py-3 text-sm font-semibold" onClick={loadSample}>Load sample</button>
             </div>
           </Section>
         </div>

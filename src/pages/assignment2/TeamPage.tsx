@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Section, Field, inputClassName, buttonPrimaryClassName, buttonSecondaryClassName, buttonGhostClassName, Pill } from '../../components/assignment2/Common'
 import type { WorkspaceState, Member } from '../../types/workspace'
 
@@ -33,22 +33,29 @@ export function TeamPage({
     showToast('팀 정보가 업데이트되었습니다.', 'success')
   }
 
+  const handleTeamFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    handleSaveTeam()
+  }
+
   return (
     <div className="grid gap-6 pb-20 lg:grid-cols-[1fr_360px] lg:pb-0">
       <div className="flex flex-col gap-6">
         <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">팀 관리</h2>
         
         <Section title="프로젝트 정보" eyebrow="기본 정보">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="팀 이름"><input className={inputClassName} value={teamForm.name} onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })} /></Field>
-            <Field label="과목명"><input className={inputClassName} value={teamForm.courseName} onChange={(e) => setTeamForm({ ...teamForm, courseName: e.target.value })} /></Field>
-            <Field label="학기"><input className={inputClassName} value={teamForm.semester} onChange={(e) => setTeamForm({ ...teamForm, semester: e.target.value })} /></Field>
-            <Field label="최종 마감일"><input className={inputClassName} type="date" value={teamForm.dueDate} onChange={(e) => setTeamForm({ ...teamForm, dueDate: e.target.value })} /></Field>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <button type="button" className={`${buttonPrimaryClassName} px-10`} onClick={handleSaveTeam}>정보 업데이트</button>
-            <button type="button" className={`${buttonSecondaryClassName} px-10`} onClick={() => { onRegenerateInvite(); showToast('초대 링크가 생성되었습니다.', 'success') }}>초대 링크 생성</button>
-          </div>
+          <form onSubmit={handleTeamFormSubmit}>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="팀 이름"><input className={inputClassName} value={teamForm.name} onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })} /></Field>
+              <Field label="과목명"><input className={inputClassName} value={teamForm.courseName} onChange={(e) => setTeamForm({ ...teamForm, courseName: e.target.value })} /></Field>
+              <Field label="학기"><input className={inputClassName} value={teamForm.semester} onChange={(e) => setTeamForm({ ...teamForm, semester: e.target.value })} /></Field>
+              <Field label="최종 마감일"><input className={inputClassName} type="date" value={teamForm.dueDate} onChange={(e) => setTeamForm({ ...teamForm, dueDate: e.target.value })} /></Field>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <button type="submit" className={`${buttonPrimaryClassName} px-10`}>정보 업데이트</button>
+              <button type="button" className={`${buttonSecondaryClassName} px-10`} onClick={() => { onRegenerateInvite(); showToast('초대 링크가 생성되었습니다.', 'success') }}>초대 링크 생성</button>
+            </div>
+          </form>
           
           <div className="mt-8 rounded-lg border border-teal-100 bg-mist p-5">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-forest/70">초대 링크</p>

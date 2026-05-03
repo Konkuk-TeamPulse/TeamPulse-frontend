@@ -10,8 +10,9 @@ import {
   deleteAssignmentTask,
   downloadAssignmentReport,
   generateAssignmentReport,
+  listAssignmentProjects,
+  loadAssignmentProject,
   loadAssignmentMeetingDetail,
-  loadAssignmentSampleWorkspace,
   loadAssignmentWorkspace,
   refreshAssignmentRisks,
   removeAssignmentTaskDependency,
@@ -22,26 +23,16 @@ import {
   updateAssignmentTeam,
 } from './lib/assignment2-api'
 import {
-  buildActivity,
-  buildMeeting,
-  buildReport,
-  buildTask,
   createEmptyWorkspace,
-  createInviteCode,
-  createSampleWorkspace,
-  deriveRisks,
-  loadWorkspace,
-  saveWorkspace,
 } from './lib/workspace-store'
 import {
   formatDate,
-  addDays,
-  createId,
   parseLines,
   compareTasks,
 } from './lib/utils'
 import type { TaskStatus } from './types/shell'
 import type { Member, WorkspaceState } from './types/workspace'
+import type { ProjectSummary } from './apis'
 
 import { Layout } from './components/assignment2/Layout'
 import { Onboarding } from './components/assignment2/Onboarding'
@@ -56,11 +47,10 @@ const statusLabels: Record<TaskStatus, string> = {
   DONE: '완료',
 }
 
-const initialWorkspace = loadWorkspace()
-
 function App() {
-  const [workspace, setWorkspace] = useState<WorkspaceState>(initialWorkspace)
-  const [transport, setTransport] = useState<'api' | 'local'>('local')
+  const [workspace, setWorkspace] = useState<WorkspaceState>(createEmptyWorkspace())
+  const [transport, setTransport] = useState<'api' | 'offline'>('offline')
+  const [projects, setProjects] = useState<ProjectSummary[] | null>(null)
   const [view, setView] = useState<ViewKey>('home')
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null)
 
@@ -70,18 +60,18 @@ function App() {
 
   const handleAction = useCallback(async (
     apiAction: () => Promise<WorkspaceState>,
-    localAction: () => WorkspaceState,
     successMsg?: string
   ) => {
     try {
-      const nextWorkspace = transport === 'api' ? await apiAction() : withDerived(localAction())
+      const nextWorkspace = await apiAction()
+      setTransport('api')
       setWorkspace(nextWorkspace)
       if (successMsg) showToast(successMsg, 'success')
     } catch (error) {
       const message = error instanceof Error ? error.message : '요청에 실패했습니다.'
       showToast(message, 'error')
     }
-  }, [transport, showToast])
+  }, [showToast])
 
   useEffect(() => {
     let active = true
@@ -96,7 +86,7 @@ function App() {
           showToast(`리스크 알림: ${urgentRisk.title}`, urgentRisk.severity === 'CRITICAL' ? 'error' : 'info')
         }
       })
-      .catch(() => active && setTransport('local'))
+      .catch(() => active && setTransport('offline'))
     return () => { active = false }
   }, [showToast])
 
@@ -122,10 +112,6 @@ function App() {
       })
   }, [transport, showToast])
 
-  useEffect(() => {
-    if (transport === 'local') saveWorkspace(workspace)
-  }, [transport, workspace])
-
   const memberNames = useMemo(() => workspace.members.map((m) => m.name), [workspace.members])
   const defaultOwner = memberNames[0] ?? workspace.user.name
   const tasks = useMemo(() => [...workspace.tasks].sort(compareTasks), [workspace.tasks])
@@ -141,21 +127,6 @@ function App() {
   const startWorkspace = (setup: Parameters<typeof bootstrapAssignmentWorkspace>[0]) => {
     handleAction(
       () => bootstrapAssignmentWorkspace(setup),
-      () => ({
-        ...createEmptyWorkspace(),
-        initialized: true,
-        user: { name: setup.name, email: setup.email },
-        team: {
-          name: setup.teamName,
-          courseName: setup.courseName,
-          semester: setup.semester,
-          dueDate: setup.dueDate,
-          inviteCode: createInviteCode(),
-          inviteUrl: '',
-        },
-        members: [{ id: createId(), name: setup.name, role: 'LEADER' }],
-        activities: [buildActivity(`${setup.teamName} 워크스페이스가 시작되었습니다.`, setup.name)],
-      }),
       '워크스페이스가 생성되었습니다.'
     )
   }
@@ -165,11 +136,40 @@ function App() {
       async () => {
         await login(input)
         setTransport('api')
-        return loadAssignmentWorkspace()
+        const nextProjects = await listAssignmentProjects()
+        setProjects(nextProjects)
+        return {
+          ...createEmptyWorkspace(),
+          initialized: false,
+          user: {
+            name: input.email,
+            email: input.email,
+          },
+        }
       },
-      () => workspace,
       '로그인되었습니다.'
     )
+  }
+
+  const openProject = (projectId: number) => {
+    handleAction(
+      () => loadAssignmentProject(projectId),
+      '프로젝트를 불러왔습니다.'
+    )
+  }
+
+  const exitProject = async () => {
+    try {
+      const nextProjects = await listAssignmentProjects()
+      setProjects(nextProjects)
+      setWorkspace(createEmptyWorkspace())
+      setTransport('api')
+      setView('home')
+      showToast('프로젝트 목록으로 돌아왔습니다.', 'success')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '프로젝트 목록을 불러오지 못했습니다.'
+      showToast(message, 'error')
+    }
   }
 
   const handleSignup = (input: Parameters<typeof signup>[0]) => {
@@ -177,6 +177,8 @@ function App() {
       async () => {
         const user = await signup(input)
         setTransport('api')
+        const nextProjects = await listAssignmentProjects()
+        setProjects(nextProjects)
         try {
           return await loadAssignmentWorkspace()
         } catch {
@@ -190,16 +192,7 @@ function App() {
           }
         }
       },
-      () => workspace,
       '회원가입되었습니다.'
-    )
-  }
-
-  const loadSample = () => {
-    handleAction(
-      () => loadAssignmentSampleWorkspace(),
-      () => createSampleWorkspace(),
-      '샘플 데이터가 로드되었습니다.'
     )
   }
 
@@ -207,7 +200,6 @@ function App() {
     if (!window.confirm('워크스페이스를 초기화하시겠습니까?')) return
     handleAction(
       () => resetAssignmentWorkspace(),
-      () => createEmptyWorkspace(),
       '워크스페이스가 초기화되었습니다.'
     )
     setView('home')
@@ -225,9 +217,9 @@ function App() {
     }
 
     const empty = createEmptyWorkspace()
-    setTransport('local')
+    setTransport('offline')
+    setProjects(null)
     setWorkspace(empty)
-    saveWorkspace(empty)
     setView('home')
     showToast('로그아웃되었습니다.', 'success')
   }
@@ -235,49 +227,18 @@ function App() {
   const addTask = (form: { title: string; owner: string; dueDate: string; blockers: string; precedingTaskId?: number }) => {
     handleAction(
       () => createAssignmentTask({ ...form, blockers: parseLines(form.blockers) }),
-      () => {
-        const precedingTask = workspace.tasks.find((item) => item.id === form.precedingTaskId)
-        const blockers = precedingTask ? [precedingTask.title] : parseLines(form.blockers)
-        const task = buildTask({ ...form, blockers })
-        return {
-          ...workspace,
-          tasks: [task, ...workspace.tasks],
-          activities: [buildActivity(`${task.title} 항목이 생성되었습니다.`, workspace.user.name), ...workspace.activities],
-        }
-      }
     )
   }
 
   const updateTaskStatus = (taskId: number, status: TaskStatus) => {
     handleAction(
       () => updateAssignmentTaskStatus(taskId, status),
-      () => ({
-        ...workspace,
-        tasks: workspace.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
-        activities: [
-          buildActivity(
-            `${workspace.tasks.find((t) => t.id === taskId)?.title} 상태가 ${statusLabels[status]}로 변경되었습니다.`,
-            workspace.user.name
-          ),
-          ...workspace.activities,
-        ],
-      })
     )
   }
 
   const editTask = (taskId: number, input: { title: string; owner: string; dueDate: string }) => {
     handleAction(
       () => updateAssignmentTask({ taskId, ...input }),
-      () => ({
-        ...workspace,
-        tasks: workspace.tasks.map((task) => task.id === taskId ? {
-          ...task,
-          title: input.title,
-          owner: input.owner,
-          dueDate: input.dueDate,
-        } : task),
-        activities: [buildActivity(`${input.title} 업무가 수정되었습니다.`, workspace.user.name), ...workspace.activities],
-      }),
       '업무가 수정되었습니다.'
     )
   }
@@ -290,19 +251,6 @@ function App() {
 
     handleAction(
       () => addAssignmentTaskDependency(taskId, precedingTaskId),
-      () => {
-        const precedingTask = workspace.tasks.find((task) => task.id === precedingTaskId)
-        if (!precedingTask) return workspace
-
-        return {
-          ...workspace,
-          tasks: workspace.tasks.map((task) => task.id === taskId ? {
-            ...task,
-            blockers: Array.from(new Set([...task.blockers, precedingTask.title])),
-          } : task),
-          activities: [buildActivity(`${workspace.tasks.find((task) => task.id === taskId)?.title}에 선행 업무가 추가되었습니다.`, workspace.user.name), ...workspace.activities],
-        }
-      },
       '선행 업무가 추가되었습니다.'
     )
   }
@@ -310,19 +258,6 @@ function App() {
   const removeTaskDependency = (taskId: number, dependencyId: number) => {
     handleAction(
       () => removeAssignmentTaskDependency(taskId, dependencyId),
-      () => {
-        const dependencyTask = workspace.tasks.find((task) => task.id === dependencyId)
-        if (!dependencyTask) return workspace
-
-        return {
-          ...workspace,
-          tasks: workspace.tasks.map((task) => task.id === taskId ? {
-            ...task,
-            blockers: task.blockers.filter((blocker) => blocker !== dependencyTask.title),
-          } : task),
-          activities: [buildActivity('선행 업무가 삭제되었습니다.', workspace.user.name), ...workspace.activities],
-        }
-      },
       '선행 업무가 삭제되었습니다.'
     )
   }
@@ -330,17 +265,6 @@ function App() {
   const removeTask = (taskId: number) => {
     handleAction(
       () => deleteAssignmentTask(taskId),
-      () => ({
-        ...workspace,
-        tasks: workspace.tasks.filter((t) => t.id !== taskId),
-        activities: [
-          buildActivity(
-            `${workspace.tasks.find((t) => t.id === taskId)?.title} 항목이 삭제되었습니다.`,
-            workspace.user.name
-          ),
-          ...workspace.activities,
-        ],
-      })
     )
   }
 
@@ -359,26 +283,6 @@ function App() {
         decisions: parseLines(form.decisions),
         actions: parseLines(form.actions),
       }),
-      () => {
-        const meeting = buildMeeting({
-          ...form,
-          decisions: parseLines(form.decisions),
-          actions: parseLines(form.actions),
-        })
-        const linkedTasks = form.createTasks
-          ? meeting.actions.map((a) => buildTask({ title: a, owner: form.actionOwner, dueDate: addDays(form.time, 7) }))
-          : []
-        return {
-          ...workspace,
-          meetings: [meeting, ...workspace.meetings],
-          tasks: [...linkedTasks, ...workspace.tasks],
-          activities: [
-            buildActivity(`${meeting.title} 회의가 기록되었습니다.`, workspace.user.name),
-            ...linkedTasks.map((t) => buildActivity(`${t.title} 항목이 회의를 통해 생성되었습니다.`, workspace.user.name)),
-            ...workspace.activities,
-          ],
-        }
-      }
     )
   }
 
@@ -399,14 +303,6 @@ function App() {
   const generateReport = () => {
     handleAction(
       () => generateAssignmentReport(),
-      () => {
-        const report = buildReport(workspace.tasks, workspace.meetings)
-        return {
-          ...workspace,
-          reports: [report, ...workspace.reports],
-          activities: [buildActivity(`${report.label} 리포트가 생성되었습니다.`, workspace.user.name), ...workspace.activities],
-        }
-      },
       '리포트가 생성되었습니다.'
     )
   }
@@ -437,11 +333,6 @@ function App() {
   const saveTeam = (team: { name: string; courseName: string; semester: string; dueDate: string }) => {
     handleAction(
       () => updateAssignmentTeam(team),
-      () => ({
-        ...workspace,
-        team: { ...workspace.team, ...team },
-        activities: [buildActivity('팀 정보가 업데이트되었습니다.', workspace.user.name), ...workspace.activities],
-      })
     )
   }
 
@@ -452,11 +343,6 @@ function App() {
     }
     handleAction(
       () => deleteAssignmentMember(m.id),
-      () => ({
-        ...workspace,
-        members: workspace.members.filter((item) => item.id !== m.id),
-        activities: [buildActivity(`${m.name}님이 팀에서 제외되었습니다.`, workspace.user.name), ...workspace.activities],
-      }),
       '팀원이 제외되었습니다.'
     )
   }
@@ -464,18 +350,6 @@ function App() {
   const regenerateInvite = () => {
     handleAction(
       () => regenerateAssignmentInviteCode(),
-      () => {
-        const inviteCode = createInviteCode()
-        return {
-          ...workspace,
-          team: {
-            ...workspace.team,
-            inviteCode,
-            inviteUrl: `${window.location.origin}/invite/${inviteCode}`,
-          },
-          activities: [buildActivity('초대 링크가 생성되었습니다.', workspace.user.name), ...workspace.activities],
-        }
-      },
       '초대 링크가 생성되었습니다.'
     )
   }
@@ -487,7 +361,9 @@ function App() {
           onStart={startWorkspace}
           onLogin={handleLogin}
           onSignup={handleSignup}
-          onLoadSample={loadSample}
+          projects={projects}
+          onSelectProject={openProject}
+          onLogout={handleLogout}
           showToast={showToast}
         />
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -504,6 +380,7 @@ function App() {
       courseName={workspace.team.courseName}
       onReset={resetWorkspace}
       onLogout={handleLogout}
+      onExitProject={exitProject}
       risks={workspace.risks}
     >
       {view === 'home' && (
@@ -563,11 +440,6 @@ function App() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </Layout>
   )
-}
-
-function withDerived(workspace: WorkspaceState): WorkspaceState {
-  if (!workspace.initialized) return { ...workspace, risks: [], reports: [] }
-  return { ...workspace, risks: deriveRisks(workspace.tasks, workspace.meetings, workspace.members) }
 }
 
 export default App

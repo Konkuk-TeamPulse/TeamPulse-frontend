@@ -12,6 +12,7 @@ interface LayoutProps {
   courseName: string
   onReset: () => void
   onLogout: () => void
+  onExitProject: () => void
   risks: RiskSignal[]
 }
 
@@ -23,7 +24,7 @@ const views: Array<{ key: ViewKey; label: string; mark: string }> = [
   { key: 'team', label: '팀 관리', mark: '팀' },
 ]
 
-export function Layout({ children, view, setView, userName, teamName, courseName, onReset, onLogout, risks }: LayoutProps) {
+export function Layout({ children, view, setView, userName, teamName, courseName, onReset, onLogout, onExitProject, risks }: LayoutProps) {
   const riskAlerts = risks.filter((risk) => risk.severity !== 'INFO')
 
   return (
@@ -64,6 +65,9 @@ export function Layout({ children, view, setView, userName, teamName, courseName
           <button type="button" className="mt-4 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50" onClick={onLogout}>
             로그아웃
           </button>
+          <button type="button" className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50" onClick={onExitProject}>
+            프로젝트 나가기
+          </button>
         </div>
       </aside>
 
@@ -75,6 +79,7 @@ export function Layout({ children, view, setView, userName, teamName, courseName
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 lg:hidden" onClick={onExitProject}>프로젝트 나가기</button>
             <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50" onClick={onReset}>초기화</button>
             <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 lg:hidden" onClick={onLogout}>로그아웃</button>
             <button type="button" className="rounded-full bg-forest px-4 py-2 text-xs font-bold text-white shadow-sm" onClick={() => setView('tasks')}>+ 새 업무</button>

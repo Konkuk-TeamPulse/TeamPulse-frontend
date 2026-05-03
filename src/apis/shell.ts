@@ -1,14 +1,5 @@
-import { fallbackShellData } from '../lib/mock-shell-data'
 import { requestJson } from './client'
-import type { HealthSummary, ShellData } from './types'
-
-export async function loadShellData(): Promise<ShellData> {
-  try {
-    return await requestJson<ShellData>('/api/demo/shell-data', {}, false)
-  } catch {
-    return fallbackShellData
-  }
-}
+import type { HealthSummary } from './types'
 
 export async function loadHealth(): Promise<HealthSummary | null> {
   try {
