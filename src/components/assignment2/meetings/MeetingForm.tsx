@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Section, Field, inputClassName, areaClassName, buttonPrimaryClassName } from '../Common'
 
 export interface MeetingFormValue {
@@ -46,9 +46,14 @@ export function MeetingForm({ memberNames, defaultOwner, onSubmit, showToast }: 
     showToast('회의 기록이 저장되었습니다.', 'success')
   }
 
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    handleSubmit()
+  }
+
   return (
     <Section title="새 회의 등록" eyebrow="입력">
-      <div className="grid gap-5">
+      <form className="grid gap-5" onSubmit={handleFormSubmit}>
         <Field label="회의 제목">
           <input className={inputClassName} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="예: 주간 싱크, 킥오프 등" />
         </Field>
@@ -80,8 +85,8 @@ export function MeetingForm({ memberNames, defaultOwner, onSubmit, showToast }: 
           <span className="text-xs font-bold uppercase tracking-wider text-slate-600">후속 조치를 할 일로 자동 생성</span>
         </label>
 
-        <button type="button" className={`${buttonPrimaryClassName} mt-2`} onClick={handleSubmit}>회의 기록 저장</button>
-      </div>
+        <button type="submit" className={`${buttonPrimaryClassName} mt-2`}>회의 기록 저장</button>
+      </form>
     </Section>
   )
 }
