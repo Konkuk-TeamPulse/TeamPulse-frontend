@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Empty, inputClassName, Pill } from '../Common'
 import type { Task, TaskStatus } from '../../../types/shell'
 
@@ -56,6 +56,11 @@ export function TaskBoard({
     setEditingTaskId(null)
   }
 
+  const handleEditSubmit = (event: FormEvent<HTMLFormElement>, task: Task) => {
+    event.preventDefault()
+    submitEdit(task)
+  }
+
   return (
     <div className="grid gap-5 lg:grid-cols-3">
       {(['TODO', 'DOING', 'DONE'] as TaskStatus[]).map((status) => (
@@ -69,20 +74,50 @@ export function TaskBoard({
             {grouped[status].length ? grouped[status].map((task) => (
               <article key={task.id} className={['rounded-lg border bg-white p-4 shadow-sm transition hover:shadow-md', status === 'DOING' ? 'border-blue-200 ring-1 ring-blue-100' : 'border-slate-200'].join(' ')}>
                 {editingTaskId === task.id ? (
-                  <div className="grid gap-2">
-                    <input className={inputClassName} value={editForm.title} onChange={(event) => setEditForm({ ...editForm, title: event.target.value })} />
-                    <select className={inputClassName} value={editForm.owner} onChange={(event) => setEditForm({ ...editForm, owner: event.target.value })}>
-                      {memberNames.map((name) => <option key={name} value={name}>{name}</option>)}
-                    </select>
-                    <input className={inputClassName} type="date" value={editForm.dueDate} onChange={(event) => setEditForm({ ...editForm, dueDate: event.target.value })} />
-                    <div className="flex gap-2">
-                      <button type="button" className="rounded-lg bg-forest px-3 py-2 text-xs font-bold text-white" onClick={() => submitEdit(task)}>저장</button>
-                      <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-500" onClick={() => setEditingTaskId(null)}>취소</button>
+                  <form className="grid gap-3" onSubmit={(event) => handleEditSubmit(event, task)}>
+                    <div className="flex items-center justify-between gap-3">
+                      <strong className="text-sm font-extrabold text-slate-950">업무 수정</strong>
+                      <div className="flex gap-2">
+                        <button type="submit" className="rounded-lg bg-forest px-3 py-2 text-xs font-bold text-white">저장</button>
+                        <button type="button" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50" onClick={() => setEditingTaskId(null)}>취소</button>
+                      </div>
                     </div>
-                  </div>
+                    <label className="grid items-center gap-2 sm:grid-cols-[56px_minmax(0,1fr)]">
+                      <span className="text-xs font-bold text-slate-500">제목</span>
+                      <input className={inputClassName} value={editForm.title} onChange={(event) => setEditForm({ ...editForm, title: event.target.value })} />
+                    </label>
+                    <label className="grid items-center gap-2 sm:grid-cols-[56px_minmax(0,1fr)]">
+                      <span className="text-xs font-bold text-slate-500">담당자</span>
+                      <select className={inputClassName} value={editForm.owner} onChange={(event) => setEditForm({ ...editForm, owner: event.target.value })}>
+                        {memberNames.map((name) => <option key={name} value={name}>{name}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid items-center gap-2 sm:grid-cols-[56px_minmax(0,1fr)]">
+                      <span className="text-xs font-bold text-slate-500">마감일</span>
+                      <input className={inputClassName} type="date" value={editForm.dueDate} onChange={(event) => setEditForm({ ...editForm, dueDate: event.target.value })} />
+                    </label>
+                  </form>
                 ) : (
                   <>
-                    <strong className="block text-sm font-bold leading-snug text-slate-950">{task.title}</strong>
+                    <div className="flex items-start justify-between gap-3">
+                      <strong className="min-w-0 flex-1 text-sm font-bold leading-snug text-slate-950">{task.title}</strong>
+                      <div className="flex shrink-0 gap-1">
+                        <button
+                          type="button"
+                          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[0.65rem] font-bold text-slate-500 transition hover:bg-slate-100"
+                          onClick={() => startEdit(task)}
+                        >
+                          수정
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-lg border border-rose-100 px-2.5 py-1.5 text-[0.65rem] font-bold text-rose-500 transition hover:bg-rose-500 hover:text-white"
+                          onClick={() => onRemoveTask(task.id)}
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    </div>
                     <div className="mt-2 flex items-center justify-between text-xs font-semibold text-slate-500">
                       <span>{task.owner}</span>
                       <span>{formatDate(task.dueDate)}</span>
@@ -145,20 +180,6 @@ export function TaskBoard({
                       {statusLabels[candidate]}로 이동
                     </button>
                   ))}
-                  <button
-                    type="button"
-                    className="rounded-full border border-slate-200 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-slate-500 transition hover:bg-slate-100"
-                    onClick={() => startEdit(task)}
-                  >
-                    수정
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-auto rounded-full border border-rose-100 px-3 py-1.5 text-[0.6rem] font-bold uppercase tracking-widest text-rose-500 transition hover:bg-rose-500 hover:text-white"
-                    onClick={() => onRemoveTask(task.id)}
-                  >
-                    삭제
-                  </button>
                 </div>
               </article>
             )) : <Empty>비어 있습니다.</Empty>}

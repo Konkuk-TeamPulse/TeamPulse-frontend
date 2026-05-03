@@ -70,9 +70,26 @@ export async function loadAssignmentWorkspace() {
   return loadWorkspaceByProject(selected.projectId, user, selected)
 }
 
+export async function listAssignmentProjects() {
+  if (!hasAccessToken()) {
+    throw new ApiRequestError('로그인이 필요합니다.', 401, 3001)
+  }
+
+  return projectApi.list()
+}
+
+export async function loadAssignmentProject(projectId: number) {
+  saveActiveProjectId(projectId)
+  const [user, projects] = await Promise.all([
+    userApi.me(),
+    projectApi.list(),
+  ])
+  const selected = projects.find((project) => project.projectId === projectId)
+
+  return loadWorkspaceByProject(projectId, user, selected)
+}
+
 export async function bootstrapAssignmentWorkspace(input: {
-  name: string
-  email: string
   teamName: string
   courseName: string
   semester: string
@@ -88,25 +105,14 @@ export async function bootstrapAssignmentWorkspace(input: {
   }
   const project = await projectApi.create(payload)
   saveActiveProjectId(project.projectId)
+  const user = await userApi.me()
 
-  return loadWorkspaceByProject(project.projectId, {
-    userId: 0,
-    email: input.email,
-    studentId: input.email,
-    name: input.name,
-    university: '',
-    phone: '',
-  })
+  return loadWorkspaceByProject(project.projectId, user)
 }
 
 export async function resetAssignmentWorkspace() {
   saveActiveProjectId(DEMO_PROJECT_ID)
   return createEmptyWorkspace()
-}
-
-export async function loadAssignmentSampleWorkspace() {
-  saveActiveProjectId(DEMO_PROJECT_ID)
-  return loadWorkspaceByProject(DEMO_PROJECT_ID)
 }
 
 export async function refreshAssignmentRisks(workspace: WorkspaceState) {

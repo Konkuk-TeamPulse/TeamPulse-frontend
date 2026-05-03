@@ -1,7 +1,6 @@
-﻿import { fallbackShellData } from './mock-shell-data'
-import { deriveRisks } from './risk-engine'
+﻿import { deriveRisks } from './risk-engine'
 import type { Activity, Meeting, Report, Task } from '../types/shell'
-import type { Member, WorkspaceState } from '../types/workspace'
+import type { WorkspaceState } from '../types/workspace'
 
 const STORAGE_KEY = 'teampulse.workspace.v2'
 
@@ -56,38 +55,6 @@ export function createEmptyWorkspace(): WorkspaceState {
     activities: [],
     reports: [],
     risks: [],
-  }
-}
-
-export function createSampleWorkspace(): WorkspaceState {
-  const owners = Array.from(new Set(fallbackShellData.tasks.map((task) => task.owner)))
-
-  const members: Member[] = owners.map((name, index) => ({
-    id: index + 1,
-    name,
-    role: index === 0 ? 'LEADER' : 'MEMBER',
-  }))
-
-  return {
-    initialized: true,
-    user: {
-      name: members[0]?.name ?? '김서준',
-      email: 'leader@teampulse.app',
-    },
-    team: {
-      name: fallbackShellData.meta.teamName,
-      courseName: '전공심화프로젝트',
-      semester: '2026-1',
-      dueDate: fallbackShellData.meta.deadline,
-      inviteCode: createInviteCode(),
-      inviteUrl: '',
-    },
-    members,
-    tasks: fallbackShellData.tasks,
-    meetings: fallbackShellData.meetings,
-    activities: fallbackShellData.activities,
-    reports: fallbackShellData.reports,
-    risks: fallbackShellData.riskSignals,
   }
 }
 

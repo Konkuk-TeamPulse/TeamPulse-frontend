@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Section, Field, inputClassName, buttonPrimaryClassName } from '../Common'
 import type { Task } from '../../../types/shell'
 
@@ -28,9 +28,14 @@ export function TaskCreateForm({ tasks, memberNames, defaultOwner, onAddTask, sh
     showToast('새로운 할 일이 추가되었습니다.', 'success')
   }
 
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    handleSubmit()
+  }
+
   return (
     <Section title="새 업무" eyebrow="입력">
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <form className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" onSubmit={handleFormSubmit}>
         <Field label="업무 제목">
           <input
             className={inputClassName}
@@ -57,7 +62,7 @@ export function TaskCreateForm({ tasks, memberNames, defaultOwner, onAddTask, sh
           />
         </Field>
         <div className="flex items-end">
-          <button type="button" className={`${buttonPrimaryClassName} w-full`} onClick={handleSubmit}>업무 생성</button>
+          <button type="submit" className={`${buttonPrimaryClassName} w-full`}>업무 생성</button>
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
           <Field label="선행 업무">
@@ -73,7 +78,7 @@ export function TaskCreateForm({ tasks, memberNames, defaultOwner, onAddTask, sh
             </select>
           </Field>
         </div>
-      </div>
+      </form>
     </Section>
   )
 }
