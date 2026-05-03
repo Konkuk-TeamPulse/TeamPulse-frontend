@@ -39,8 +39,8 @@ export function TeamPage({
   }
 
   return (
-    <div className="grid gap-6 pb-20 lg:grid-cols-[1fr_360px] lg:pb-0">
-      <div className="flex flex-col gap-6">
+    <div className="grid min-w-0 gap-6 pb-20 lg:grid-cols-[minmax(0,1fr)_360px] lg:pb-0">
+      <div className="flex min-w-0 flex-col gap-6">
         <h2 className="text-2xl font-extrabold tracking-tight text-slate-950">팀 관리</h2>
         
         <Section title="프로젝트 정보" eyebrow="기본 정보">
@@ -57,9 +57,9 @@ export function TeamPage({
             </div>
           </form>
           
-          <div className="mt-8 rounded-lg border border-teal-100 bg-mist p-5">
+          <div className="mt-8 min-w-0 rounded-lg border border-teal-100 bg-mist p-5">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-forest/70">초대 링크</p>
-            <strong className="mt-4 block max-w-full break-all rounded-lg bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm">
+            <strong className="mt-4 block min-w-0 max-w-full overflow-hidden break-all rounded-lg bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm">
               {workspace.team.inviteUrl || '초대 링크를 생성해주세요'}
             </strong>
             {workspace.team.inviteCode && (
@@ -72,18 +72,18 @@ export function TeamPage({
         </Section>
       </div>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex min-w-0 flex-col gap-8">
         <h3 className="text-lg font-extrabold tracking-tight text-slate-950">구성원</h3>
         
         <div className="grid gap-4">
           {workspace.members.map((member) => (
-            <article key={member.id} className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-4">
+            <article key={member.id} className="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex min-w-0 items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-forest text-sm font-bold text-white">
                    {member.name.charAt(0)}
                 </div>
-                <div>
-                  <strong className="block text-sm font-bold tracking-tight text-slate-950">{member.name}</strong>
+                <div className="min-w-0">
+                  <strong className="block truncate text-sm font-bold tracking-tight text-slate-950">{member.name}</strong>
                   <div className="mt-1 flex items-center gap-2">
                      <Pill tone={member.role === 'LEADER' ? 'accent' : 'muted'}>{member.role === 'LEADER' ? '팀장' : '팀원'}</Pill>
                   </div>

@@ -390,6 +390,7 @@ function App() {
           completion={completion}
           formatDate={formatDate}
           onCreateInviteLink={regenerateInvite}
+          showToast={showToast}
         />
       )}
       {view === 'tasks' && (
