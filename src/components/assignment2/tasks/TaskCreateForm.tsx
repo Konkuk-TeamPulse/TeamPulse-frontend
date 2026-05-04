@@ -14,11 +14,13 @@ export function TaskCreateForm({ tasks, memberNames, defaultOwner, onAddTask, sh
   const [form, setForm] = useState({ title: '', owner: defaultOwner, dueDate: '', precedingTaskId: '' })
 
   const handleSubmit = () => {
-    if (!form.title.trim()) return showToast('할 일 제목을 입력해주세요.', 'error')
+    const title = form.title.trim()
+    if (!title) return showToast('할 일 제목을 입력해주세요.', 'error')
+    if (tasks.some((task) => task.title.trim() === title)) return showToast('이미 있는 업무입니다.', 'error')
     if (!form.dueDate) return showToast('마감일을 선택해주세요.', 'error')
 
     onAddTask({
-      title: form.title,
+      title,
       owner: form.owner,
       dueDate: form.dueDate,
       blockers: '',

@@ -18,6 +18,7 @@ export const invitationApi = {
       `/api/invitations/${inviteCode}/accept`,
       {
         method: 'POST',
+        body: JSON.stringify({}),
       },
     )
   },
