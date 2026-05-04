@@ -101,6 +101,7 @@ export function buildMeeting(input: {
     id: createEntityId(),
     title: input.title,
     time: input.time,
+    attendees: [],
     agenda: input.agenda,
     decisions: input.decisions ?? [],
     actions: input.actions ?? [],

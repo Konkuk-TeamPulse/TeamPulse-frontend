@@ -226,6 +226,7 @@ export async function createAssignmentMeeting(input: {
   title: string
   time: string
   agenda: string
+  attendees: string[]
   decisions: string[]
   actions: string[]
   actionOwner: string
@@ -233,6 +234,7 @@ export async function createAssignmentMeeting(input: {
 }) {
   const members = await memberApi.list(activeProjectId)
   const assignee = findMemberByName(members, input.actionOwner)
+  const attendeeIds = mapAttendeeIds(members, input.attendees)
   const meetingDate = input.time.slice(0, 10)
 
   await meetingApi.create(activeProjectId, {
@@ -242,7 +244,7 @@ export async function createAssignmentMeeting(input: {
     content: input.agenda,
     decisions: input.decisions,
     actions: input.actions,
-    attendeeIds: members.map((member) => member.memberId),
+    attendeeIds,
     actionItems: input.actions.map((content) => ({
       content,
       assigneeId: assignee.memberId,
@@ -273,8 +275,19 @@ export async function loadAssignmentMeetingDetail(meetingId: number): Promise<Me
     title: detail.title,
     time: detail.meetingDate,
     agenda: detail.agenda,
+    content: detail.content,
+    attendees: detail.attendees.map((attendee) => attendee.name),
     decisions,
-    actions: detail.actionItems.map((item) => `${item.content} - ${item.assigneeName}`),
+    actions: detail.actionItems.map((item) => item.content),
+    actionItems: detail.actionItems.map((item) => ({
+      id: item.actionItemId,
+      content: item.content,
+      assigneeName: item.assigneeName,
+      dueDate: item.dueDate,
+      isCompleted: item.isCompleted,
+    })),
+    createdAt: detail.createdAt,
+    updatedAt: detail.updatedAt,
   }
 }
 
@@ -398,7 +411,7 @@ async function loadWorkspaceByProject(projectId: number, knownUser?: UserMe, sum
     },
     members: members.map(mapMember),
     tasks: mapTasks(tasks),
-    meetings: meetings.map(mapMeeting),
+    meetings: meetings.map((meeting) => mapMeeting(meeting, members)),
     activities: activities.map(mapActivity),
     reports: [],
     risks: mapRisks(risks, dashboard),
@@ -447,14 +460,26 @@ function mapTasks(tasks: TaskSummary[]): Task[] {
   }))
 }
 
-function mapMeeting(meeting: MeetingSummary): Meeting {
+function mapMeeting(meeting: MeetingSummary, members: MemberSummary[]): Meeting {
+  const memberNameById = new Map(members.map((member) => [member.memberId, member.name]))
+  const attendees = (meeting.attendeeIds ?? [])
+    .map((memberId) => memberNameById.get(memberId))
+    .filter((name): name is string => Boolean(name))
+
   return {
     id: meeting.meetingId,
     title: meeting.title,
     time: meeting.meetingDate,
-    agenda: meeting.agenda ?? meeting.writerName,
+    writerName: meeting.writerName,
+    attendees: attendees.length ? attendees : meeting.writerName ? [meeting.writerName] : [],
+    agenda: meeting.agenda ?? '',
+    content: meeting.content,
     decisions: meeting.decisions ?? [],
     actions: meeting.actions ?? meeting.actionItems?.map((item) => item.content) ?? [],
+    actionItems: meeting.actionItems?.map((item) => ({
+      content: item.content,
+      dueDate: item.dueDate,
+    })),
   }
 }
 
@@ -513,6 +538,15 @@ function findMemberByName(members: MemberSummary[], name: string) {
     throw new ApiRequestError('태스크를 배정할 팀원이 없습니다.', 400)
   }
   return member
+}
+
+function mapAttendeeIds(members: MemberSummary[], attendeeNames: string[]) {
+  const trimmedNames = attendeeNames.map((name) => name.trim()).filter(Boolean)
+  const attendeeIds = trimmedNames
+    .map((name) => members.find((member) => member.name === name)?.memberId)
+    .filter((memberId): memberId is number => typeof memberId === 'number')
+
+  return Array.from(new Set(attendeeIds))
 }
 
 function addDays(value: string, days: number) {

@@ -22,7 +22,7 @@ export const projectApi = {
     return requestJson<ProjectSummary[]>('/api/projects')
   },
   get(projectId: number) {
-    return requestJson<ProjectDetail>(`/api/projects/${projectId}`, {}, false)
+    return requestJson<ProjectDetail>(`/api/projects/${projectId}`)
   },
   update(projectId: number, input: ProjectCreateRequest) {
     return requestJson<ProjectUpdateResult>(
@@ -31,11 +31,10 @@ export const projectApi = {
         method: 'PATCH',
         body: JSON.stringify(input),
       },
-      false,
     )
   },
   dashboard(projectId: number) {
-    return requestJson<DashboardResult>(`/api/projects/${projectId}/dashboard`, {}, false)
+    return requestJson<DashboardResult>(`/api/projects/${projectId}/dashboard`)
   },
   risks(projectId: number) {
     return requestJson<RisksResult | BackendRisk[]>(`/api/projects/${projectId}/risks`)

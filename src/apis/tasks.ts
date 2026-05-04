@@ -18,7 +18,7 @@ export const taskApi = {
     })
   },
   list(projectId: number) {
-    return requestJson<TaskSummary[]>(`/api/projects/${projectId}/tasks`, {}, false)
+    return requestJson<TaskSummary[]>(`/api/projects/${projectId}/tasks`)
   },
   update(taskId: number, input: TaskUpdateRequest) {
     return requestJson<TaskUpdateResult>(`/api/tasks/${taskId}`, {
