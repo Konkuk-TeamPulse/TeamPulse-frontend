@@ -54,7 +54,6 @@ export function ReportsPage({ workspace, onGenerateReport, onDownloadReport }: R
                     <strong className="text-sm font-bold text-slate-950">{report.label}</strong>
                     <Pill tone={report.status === 'READY' ? 'good' : 'muted'}>{report.status === 'READY' ? '완성됨' : '준비중'}</Pill>
                  </div>
-                 <p className="mt-2 text-xs font-semibold text-slate-500">{report.range}</p>
                  <button
                   type="button"
                   className="mt-4 rounded-lg border border-slate-200 px-4 py-2 text-xs font-bold text-forest transition hover:bg-forest hover:text-white disabled:cursor-wait disabled:opacity-50"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { login, logout, signup } from './apis'
+import { ApiRequestError, clearAuthTokens, hasAccessToken, login, logout, signup } from './apis'
 import {
   addAssignmentTaskDependency,
   acceptAssignmentInvitation,
@@ -11,10 +11,9 @@ import {
   downloadAssignmentReport,
   generateAssignmentReport,
   listAssignmentProjects,
+  loadInvitationInfo,
   loadAssignmentProject,
   loadAssignmentMeetingDetail,
-  loadAssignmentWorkspace,
-  refreshAssignmentRisks,
   removeAssignmentTaskDependency,
   regenerateAssignmentInviteCode,
   resetAssignmentWorkspace,
@@ -32,7 +31,7 @@ import {
 } from './lib/utils'
 import type { TaskStatus } from './types/shell'
 import type { Member, WorkspaceState } from './types/workspace'
-import type { ProjectSummary } from './apis'
+import type { InvitationInfo, ProjectSummary } from './apis'
 
 import { Layout } from './components/assignment2/Layout'
 import { Onboarding } from './components/assignment2/Onboarding'
@@ -51,6 +50,8 @@ function App() {
   const [workspace, setWorkspace] = useState<WorkspaceState>(createEmptyWorkspace())
   const [transport, setTransport] = useState<'api' | 'offline'>('offline')
   const [projects, setProjects] = useState<ProjectSummary[] | null>(null)
+  const [invitation, setInvitation] = useState<InvitationInfo | null>(null)
+  const [pendingInviteCode, setPendingInviteCode] = useState<string | null>(null)
   const [view, setView] = useState<ViewKey>('home')
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null)
 
@@ -75,18 +76,21 @@ function App() {
 
   useEffect(() => {
     let active = true
-    loadAssignmentWorkspace()
-      .then((w) => w.initialized ? refreshAssignmentRisks(w).catch(() => w) : w)
-      .then((w) => {
+    listAssignmentProjects()
+      .then((nextProjects) => {
         if (!active) return
         setTransport('api')
-        setWorkspace(w)
-        const urgentRisk = w.risks.find((risk) => risk.severity !== 'INFO')
-        if (urgentRisk) {
-          showToast(`리스크 알림: ${urgentRisk.title}`, urgentRisk.severity === 'CRITICAL' ? 'error' : 'info')
-        }
+        setProjects(nextProjects)
+        setWorkspace(createEmptyWorkspace())
       })
-      .catch(() => active && setTransport('offline'))
+      .catch((error) => {
+        if (!active) return
+        if (error instanceof ApiRequestError && error.status === 401) {
+          clearAuthTokens()
+          setProjects(null)
+        }
+        setTransport('offline')
+      })
     return () => { active = false }
   }, [showToast])
 
@@ -94,23 +98,19 @@ function App() {
     const inviteCode = window.location.pathname.match(/^\/invite\/([^/]+)/)?.[1]
     if (!inviteCode) return
 
-    if (transport !== 'api') {
-      const timer = window.setTimeout(() => showToast('초대 수락은 로그인 후 사용할 수 있습니다.', 'info'), 0)
-      return () => window.clearTimeout(timer)
-    }
-
-    acceptAssignmentInvitation(inviteCode)
-      .then((nextWorkspace) => {
-        setWorkspace(nextWorkspace)
-        setView('home')
-        window.history.replaceState(null, '', '/')
-        showToast('초대를 수락했습니다.', 'success')
+    let active = true
+    loadInvitationInfo(inviteCode)
+      .then((info) => {
+        if (!active) return
+        setInvitation(info)
       })
       .catch((error) => {
+        if (!active) return
         const message = error instanceof Error ? error.message : '초대 수락에 실패했습니다.'
         showToast(message, 'error')
       })
-  }, [transport, showToast])
+    return () => { active = false }
+  }, [showToast])
 
   const memberNames = useMemo(() => workspace.members.map((m) => m.name), [workspace.members])
   const defaultOwner = memberNames[0] ?? workspace.user.name
@@ -131,11 +131,55 @@ function App() {
     )
   }
 
+  const handleAcceptInvitation = async () => {
+    if (!invitation) return
+
+    if (!hasAccessToken()) {
+      setPendingInviteCode(invitation.inviteCode)
+      showToast('초대 수락을 위해 먼저 로그인하거나 회원가입해주세요.', 'info')
+      return
+    }
+
+    try {
+      const nextWorkspace = await acceptAssignmentInvitation(invitation.inviteCode)
+      setWorkspace(nextWorkspace)
+      setTransport('api')
+      setProjects(null)
+      setInvitation(null)
+      setPendingInviteCode(null)
+      setView('home')
+      window.history.replaceState(null, '', '/')
+      showToast('초대를 수락했습니다.', 'success')
+    } catch (error) {
+      if (error instanceof ApiRequestError && error.status === 401) {
+        clearAuthTokens()
+        setProjects(null)
+        setPendingInviteCode(invitation.inviteCode)
+        showToast('로그인이 필요합니다. 로그인 후 초대 수락을 다시 진행합니다.', 'info')
+        return
+      }
+
+      const message = error instanceof Error ? error.message : '초대 수락에 실패했습니다.'
+      showToast(message, 'error')
+    }
+  }
+
   const handleLogin = (input: Parameters<typeof login>[0]) => {
     handleAction(
       async () => {
         await login(input)
         setTransport('api')
+        const inviteCode = pendingInviteCode ?? invitation?.inviteCode
+
+        if (inviteCode) {
+          const nextWorkspace = await acceptAssignmentInvitation(inviteCode)
+          setProjects(null)
+          setPendingInviteCode(null)
+          setInvitation(null)
+          window.history.replaceState(null, '', '/')
+          return nextWorkspace
+        }
+
         const nextProjects = await listAssignmentProjects()
         setProjects(nextProjects)
         return {
@@ -147,7 +191,7 @@ function App() {
           },
         }
       },
-      '로그인되었습니다.'
+      pendingInviteCode ?? invitation?.inviteCode ? '로그인 후 초대를 수락했습니다.' : '로그인되었습니다.'
     )
   }
 
@@ -177,22 +221,29 @@ function App() {
       async () => {
         const user = await signup(input)
         setTransport('api')
+        const inviteCode = pendingInviteCode ?? invitation?.inviteCode
+
+        if (inviteCode) {
+          const nextWorkspace = await acceptAssignmentInvitation(inviteCode)
+          setProjects(null)
+          setPendingInviteCode(null)
+          setInvitation(null)
+          window.history.replaceState(null, '', '/')
+          return nextWorkspace
+        }
+
         const nextProjects = await listAssignmentProjects()
         setProjects(nextProjects)
-        try {
-          return await loadAssignmentWorkspace()
-        } catch {
-          return {
-            ...createEmptyWorkspace(),
-            initialized: false,
-            user: {
-              name: user.name ?? input.name,
-              email: user.email,
-            },
-          }
+        return {
+          ...createEmptyWorkspace(),
+          initialized: false,
+          user: {
+            name: user.name ?? input.name,
+            email: user.email,
+          },
         }
       },
-      '회원가입되었습니다.'
+      pendingInviteCode ?? invitation?.inviteCode ? '회원가입 후 초대를 수락했습니다.' : '회원가입되었습니다.'
     )
   }
 
@@ -272,6 +323,7 @@ function App() {
     title: string
     time: string
     agenda: string
+    attendees: string[]
     decisions: string
     actions: string
     actionOwner: string
@@ -294,9 +346,11 @@ function App() {
         meetings: current.meetings.map((meeting) => meeting.id === meetingId ? detail : meeting),
       }))
       showToast('회의록 상세를 불러왔습니다.', 'success')
+      return true
     } catch (error) {
       const message = error instanceof Error ? error.message : '회의록 상세 조회에 실패했습니다.'
       showToast(message, 'error')
+      return false
     }
   }
 
@@ -362,6 +416,8 @@ function App() {
           onLogin={handleLogin}
           onSignup={handleSignup}
           projects={projects}
+          invitation={invitation}
+          onAcceptInvitation={handleAcceptInvitation}
           onSelectProject={openProject}
           onLogout={handleLogout}
           showToast={showToast}

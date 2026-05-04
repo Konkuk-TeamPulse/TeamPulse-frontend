@@ -7,7 +7,7 @@ interface MeetingsPageProps {
   memberNames: string[]
   defaultOwner: string
   onAddMeeting: (meeting: MeetingFormValue) => void
-  onLoadMeetingDetail: (meetingId: number) => void
+  onLoadMeetingDetail: (meetingId: number) => Promise<boolean>
   formatDate: (value: string) => string
   showToast: (msg: string, type?: 'success' | 'error') => void
 }

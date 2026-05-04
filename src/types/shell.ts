@@ -49,9 +49,23 @@ export type Meeting = {
   id: number
   title: string
   time: string
+  writerName?: string
+  attendees: string[]
   agenda: string
+  content?: string
   decisions: string[]
   actions: string[]
+  actionItems?: MeetingActionItem[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type MeetingActionItem = {
+  id?: number
+  content: string
+  assigneeName?: string
+  dueDate?: string | null
+  isCompleted?: boolean
 }
 
 export type Activity = {

@@ -7,7 +7,7 @@ import {
   buttonSecondaryClassName,
 } from "./Common";
 import { validateEmail } from "../../lib/utils";
-import type { ProjectSummary } from "../../apis";
+import type { InvitationInfo, ProjectSummary } from "../../apis";
 
 interface OnboardingProps {
   onStart: (setup: {
@@ -25,6 +25,8 @@ interface OnboardingProps {
     phone: string;
   }) => void;
   projects: ProjectSummary[] | null;
+  invitation: InvitationInfo | null;
+  onAcceptInvitation: () => void;
   onSelectProject: (projectId: number) => void;
   onLogout: () => void;
   showToast: (msg: string, type?: "success" | "error") => void;
@@ -35,6 +37,8 @@ export function Onboarding({
   onLogin,
   onSignup,
   projects,
+  invitation,
+  onAcceptInvitation,
   onSelectProject,
   onLogout,
   showToast,
@@ -131,12 +135,47 @@ export function Onboarding({
         </div>
 
         <div className="flex flex-col justify-center gap-6">
+          {invitation && (
+            <Section title="프로젝트 초대" eyebrow="초대">
+              <div className="grid gap-4">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-lg font-extrabold tracking-tight text-slate-950">
+                    {invitation.projectName}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-500">
+                    {invitation.subject} · 팀장 {invitation.teamLeaderName}
+                  </p>
+                  <p className="mt-2 text-xs font-bold text-slate-500">
+                    만료 {invitation.expiredAt}
+                  </p>
+                </div>
+                {invitation.isExpired ? (
+                  <p className="rounded-lg border border-rose-100 bg-rose-50 p-4 text-sm font-bold text-rose-700">
+                    만료된 초대 링크입니다.
+                  </p>
+                ) : invitation.isAlreadyJoined ? (
+                  <p className="rounded-lg border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                    이미 참여 중인 프로젝트입니다.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    className={buttonPrimaryClassName}
+                    onClick={onAcceptInvitation}
+                  >
+                    초대 수락
+                  </button>
+                )}
+              </div>
+            </Section>
+          )}
+
           <Section title="계정 연결" eyebrow="인증">
             {projects ? (
               <div className="grid gap-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-bold text-slate-500">
-                    참여 중인 프로젝트
+                    참여 중인 프로젝트 ({projects.length})
                   </p>
                   <button
                     type="button"
@@ -147,9 +186,9 @@ export function Onboarding({
                   </button>
                 </div>
                 {projects.length ? (
-                  projects.map((project) => (
+                  projects.map((project, index) => (
                     <button
-                      key={project.projectId}
+                      key={`${project.projectId}-${index}`}
                       type="button"
                       className="grid gap-2 rounded-lg border border-black/10 bg-white px-4 py-3 text-left transition hover:border-forest/40 hover:bg-forest/5"
                       onClick={() => onSelectProject(project.projectId)}

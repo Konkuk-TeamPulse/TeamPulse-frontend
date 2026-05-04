@@ -126,21 +126,27 @@ export function TaskBoard({
                 )}
 
                 {task.blockers.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {task.blockers.map((blocker, index) => {
-                      const dependencyId = tasks.find((candidate) => candidate.title === blocker)?.id
-                      return (
-                        <button
-                          key={index}
-                          type="button"
-                          className="rounded-full"
-                          onClick={() => dependencyId && onRemoveDependency(task.id, dependencyId)}
-                          title="선행 업무 삭제"
-                        >
-                          <Pill tone="accent">{blocker} ×</Pill>
-                        </button>
-                      )
-                    })}
+                  <div className="mt-4 rounded-lg border border-rose-100 bg-rose-50/70 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-[0.65rem] font-extrabold uppercase tracking-widest text-rose-700">선행 업무</span>
+                      <span className="text-[0.65rem] font-bold text-rose-500">{task.blockers.length}개</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {task.blockers.map((blocker, index) => {
+                        const dependencyId = tasks.find((candidate) => candidate.title === blocker)?.id
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            className="rounded-full"
+                            onClick={() => dependencyId && onRemoveDependency(task.id, dependencyId)}
+                            title="선행 업무 삭제"
+                          >
+                            <Pill tone="accent">{blocker} ×</Pill>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
 
