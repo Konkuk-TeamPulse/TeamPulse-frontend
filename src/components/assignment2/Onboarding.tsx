@@ -53,6 +53,7 @@ export function Onboarding({
   const [authForm, setAuthForm] = useState({
     loginEmail: "",
     password: "",
+    passwordConfirm: "",
     email: "",
     name: "",
     university: "",
@@ -96,6 +97,10 @@ export function Onboarding({
       return showToast("유효한 이메일 형식이 아닙니다.", "error");
     if (!authForm.password)
       return showToast("비밀번호를 입력해주세요.", "error");
+    if (!authForm.passwordConfirm)
+      return showToast("비밀번호를 한 번 더 입력해주세요.", "error");
+    if (authForm.password !== authForm.passwordConfirm)
+      return showToast("비밀번호가 일치하지 않습니다.", "error");
     if (!authForm.university.trim())
       return showToast("학교 이름을 입력해주세요.", "error");
     if (!authForm.phone.trim())
@@ -259,15 +264,15 @@ export function Onboarding({
                         placeholder="영문, 숫자, 특수문자 포함"
                       />
                     </Field>
-                    <button
-                      type="submit"
-                      className={buttonPrimaryClassName}
-                    >
+                    <button type="submit" className={buttonPrimaryClassName}>
                       로그인하고 불러오기
                     </button>
                   </form>
                 ) : (
-                  <form className="grid gap-5 sm:grid-cols-2" onSubmit={handleAuthSubmit}>
+                  <form
+                    className="grid gap-5 sm:grid-cols-2"
+                    onSubmit={handleAuthSubmit}
+                  >
                     <Field label="이름">
                       <input
                         className={inputClassName}
@@ -275,7 +280,7 @@ export function Onboarding({
                         onChange={(e) =>
                           setAuthForm({ ...authForm, name: e.target.value })
                         }
-                        placeholder="이주호"
+                        placeholder="홍길동"
                       />
                     </Field>
                     <Field label="이메일">
@@ -298,6 +303,20 @@ export function Onboarding({
                           setAuthForm({ ...authForm, password: e.target.value })
                         }
                         placeholder="영문, 숫자, 특수문자 포함"
+                      />
+                    </Field>
+                    <Field label="비밀번호 확인">
+                      <input
+                        className={inputClassName}
+                        type="password"
+                        value={authForm.passwordConfirm}
+                        onChange={(e) =>
+                          setAuthForm({
+                            ...authForm,
+                            passwordConfirm: e.target.value,
+                          })
+                        }
+                        placeholder="비밀번호 재입력"
                       />
                     </Field>
                     <Field label="학교">
@@ -323,10 +342,10 @@ export function Onboarding({
                         placeholder="010-1234-1234"
                       />
                     </Field>
-                    <div className="flex items-end">
+                    <div className="sm:col-span-2">
                       <button
                         type="submit"
-                        className={`${buttonPrimaryClassName} w-full`}
+                        className={`${buttonPrimaryClassName} w-full py-3`}
                       >
                         회원가입
                       </button>
@@ -382,10 +401,7 @@ export function Onboarding({
                   </Field>
                 </div>
                 <div className="mt-8 grid gap-4">
-                  <button
-                    type="submit"
-                    className={buttonPrimaryClassName}
-                  >
+                  <button type="submit" className={buttonPrimaryClassName}>
                     워크스페이스 생성
                   </button>
                 </div>
