@@ -38,6 +38,20 @@ export function TeamPage({
     handleSaveTeam()
   }
 
+  const copyInviteLink = async () => {
+    if (!workspace.team.inviteUrl) {
+      showToast('초대 링크를 먼저 생성해주세요.', 'error')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(workspace.team.inviteUrl)
+      showToast('초대 링크가 복사되었습니다.', 'success')
+    } catch {
+      showToast('초대 링크 복사에 실패했습니다.', 'error')
+    }
+  }
+
   return (
     <div className="grid min-w-0 gap-6 pb-20 lg:grid-cols-[minmax(0,1fr)_360px] lg:pb-0">
       <div className="flex min-w-0 flex-col gap-6">
@@ -59,9 +73,22 @@ export function TeamPage({
           
           <div className="mt-8 min-w-0 rounded-lg border border-teal-100 bg-mist p-5">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-forest/70">초대 링크</p>
-            <strong className="mt-4 block min-w-0 max-w-full overflow-hidden break-all rounded-lg bg-white px-3 py-3 text-sm font-semibold text-slate-900 shadow-sm">
-              {workspace.team.inviteUrl || '초대 링크를 생성해주세요'}
-            </strong>
+            <div className="mt-4 flex min-w-0 items-center gap-2 rounded-lg bg-white p-2 shadow-sm">
+              <strong className="block min-w-0 flex-1 overflow-hidden break-all px-2 py-1 text-sm font-semibold text-slate-900">
+                {workspace.team.inviteUrl || '초대 링크를 생성해주세요'}
+              </strong>
+              <button
+                type="button"
+                className={[
+                  'shrink-0 rounded-md px-3 py-2 text-xs font-bold text-white transition',
+                  workspace.team.inviteUrl ? 'bg-forest hover:bg-[#08283e]' : 'cursor-not-allowed bg-slate-300',
+                ].join(' ')}
+                onClick={copyInviteLink}
+                disabled={!workspace.team.inviteUrl}
+              >
+                복사
+              </button>
+            </div>
             {workspace.team.inviteCode && (
               <p className="mt-4 text-xs font-bold text-slate-500">코드: {workspace.team.inviteCode}</p>
             )}
