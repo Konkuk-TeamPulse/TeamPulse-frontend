@@ -7,7 +7,7 @@ const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
 
 export const apiBaseUrl = configuredBaseUrl
   ? configuredBaseUrl.replace(/\/$/, '')
-  : 'http://localhost:8080'
+  : ''
 
 export class ApiRequestError extends Error {
   status: number
