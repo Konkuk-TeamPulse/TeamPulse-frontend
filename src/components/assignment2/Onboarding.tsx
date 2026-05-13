@@ -60,6 +60,18 @@ export function Onboarding({
     phone: "",
   });
 
+  const resetSignupForm = () => {
+    setAuthForm((current) => ({
+      ...current,
+      password: "",
+      passwordConfirm: "",
+      email: "",
+      name: "",
+      university: "",
+      phone: "",
+    }));
+  };
+
   const handleStart = () => {
     if (!setup.teamName.trim())
       return showToast("팀 이름을 입력해주세요.", "error");
@@ -233,7 +245,10 @@ export function Onboarding({
                         ? buttonPrimaryClassName
                         : buttonSecondaryClassName
                     }
-                    onClick={() => setAuthMode("signup")}
+                    onClick={() => {
+                      setAuthMode("signup");
+                      resetSignupForm();
+                    }}
                   >
                     회원가입
                   </button>
