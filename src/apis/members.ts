@@ -10,4 +10,9 @@ export const memberApi = {
       method: 'DELETE',
     })
   },
+  remove(projectId: number, memberId: number) {
+    return requestJson<null>(`/api/projects/${projectId}/members/${memberId}`, {
+      method: 'DELETE',
+    })
+  },
 }

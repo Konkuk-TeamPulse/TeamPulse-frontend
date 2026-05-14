@@ -391,6 +391,9 @@ function App() {
   }
 
   const removeMember = (m: Member) => {
+    const currentMember = workspace.members.find((member) => member.name === workspace.user.name)
+    if (currentMember?.role !== 'LEADER') return showToast('팀장만 팀원을 내보낼 수 있습니다.', 'error')
+    if (m.name === workspace.user.name) return showToast('자기 자신은 내보낼 수 없습니다.', 'error')
     if (workspace.members.length === 1) return showToast('최소 한 명의 팀원은 있어야 합니다.', 'error')
     if (workspace.tasks.some((t) => t.owner === m.name && t.status !== 'DONE')) {
       return showToast('완료되지 않은 할 일이 있는 팀원은 제외할 수 없습니다.', 'error')

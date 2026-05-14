@@ -349,12 +349,20 @@ export async function acceptAssignmentInvitation(inviteCode: string) {
 
 export async function deleteAssignmentMember(memberId: number) {
   const workspace = await loadWorkspaceByProject(activeProjectId)
+  const currentMember = workspace.members.find((member) => member.name === workspace.user.name)
   const target = workspace.members.find((member) => member.id === memberId)
-  if (!target || target.name !== workspace.user.name) {
-    throw new ApiRequestError('현재 명세에서는 본인 팀 탈퇴만 가능합니다.', 400)
+
+  if (currentMember?.role !== 'LEADER') {
+    throw new ApiRequestError('팀장만 팀원을 내보낼 수 있습니다.', 403)
+  }
+  if (!target) {
+    throw new ApiRequestError('내보낼 팀원을 찾을 수 없습니다.', 404)
+  }
+  if (target.name === workspace.user.name) {
+    throw new ApiRequestError('자기 자신은 내보낼 수 없습니다.', 400)
   }
 
-  await memberApi.leave(activeProjectId)
+  await memberApi.remove(activeProjectId, memberId)
   return loadAssignmentWorkspace()
 }
 
