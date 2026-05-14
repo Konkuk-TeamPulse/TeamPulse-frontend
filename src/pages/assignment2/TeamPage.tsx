@@ -17,6 +17,8 @@ export function TeamPage({
   onRegenerateInvite,
   showToast
 }: TeamPageProps) {
+  const currentMember = workspace.members.find((member) => member.name === workspace.user.name)
+  const canRemoveMembers = currentMember?.role === 'LEADER'
   const [teamForm, setTeamForm] = useState({
     name: workspace.team.name,
     courseName: workspace.team.courseName,
@@ -103,22 +105,29 @@ export function TeamPage({
         <h3 className="text-lg font-extrabold tracking-tight text-slate-950">구성원</h3>
         
         <div className="grid gap-4">
-          {workspace.members.map((member) => (
-            <article key={member.id} className="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex min-w-0 items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-forest text-sm font-bold text-white">
-                   {member.name.charAt(0)}
-                </div>
-                <div className="min-w-0">
-                  <strong className="block truncate text-sm font-bold tracking-tight text-slate-950">{member.name}</strong>
-                  <div className="mt-1 flex items-center gap-2">
-                     <Pill tone={member.role === 'LEADER' ? 'accent' : 'muted'}>{member.role === 'LEADER' ? '팀장' : '팀원'}</Pill>
+          {workspace.members.map((member) => {
+            const isCurrentUser = member.name === workspace.user.name
+
+            return (
+              <article key={member.id} className="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-forest text-sm font-bold text-white">
+                    {member.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <strong className="block truncate text-sm font-bold tracking-tight text-slate-950">{member.name}</strong>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Pill tone={member.role === 'LEADER' ? 'accent' : 'muted'}>{member.role === 'LEADER' ? '팀장' : '팀원'}</Pill>
+                      {isCurrentUser && <Pill tone="good">본인</Pill>}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <button type="button" className={`${buttonGhostClassName} text-rose-500`} onClick={() => onRemoveMember(member)}>내보내기</button>
-            </article>
-          ))}
+                {canRemoveMembers && !isCurrentUser && (
+                  <button type="button" className={`${buttonGhostClassName} text-rose-500`} onClick={() => onRemoveMember(member)}>내보내기</button>
+                )}
+              </article>
+            )
+          })}
         </div>
       </div>
     </div>
