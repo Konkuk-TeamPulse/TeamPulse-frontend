@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# TeamPulse Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+TeamPulse의 프론트엔드(React + Vite + TypeScript).
 
-Currently, two official plugins are available:
+- 운영 배포: https://team-pulse-frontend.vercel.app
+- 백엔드 API: https://teampulse-api.duckdns.org
+- Backend repo: https://github.com/Konkuk-TeamPulse/TeamPulse-backend
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 환경변수
 
-## React Compiler
+`.env.example`을 복사하여 `.env`를 생성한다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_BASE_URL=https://teampulse-api.duckdns.org
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+로컬 백엔드와 함께 띄울 때는 `VITE_API_BASE_URL=http://localhost:8080`으로 변경한다.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 로컬 실행
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+npm install
+npm run dev
 ```
+
+기본 포트 `5173`. 브라우저에서 `http://localhost:5173` 접속.
+
+## 빌드
+
+```powershell
+npm run build
+```
+
+`tsc -b && vite build`가 실행되며 산출물은 `dist/`에 생성된다. `npm run preview`로 프로덕션 빌드를 로컬에서 확인할 수 있다.
+
+## 린트
+
+```powershell
+npm run lint
+```
+
+## 배포
+
+main 브랜치에 push하면 Vercel Git 연동이 자동으로 빌드/배포한다. SPA 라우팅은 `vercel.json`의 rewrite 설정으로 처리된다 (`/(.*) -> /index.html`).
+
+## 디렉터리 구조
+
+- `src/` 화면, 컴포넌트, hooks, lib
+- `src/lib/risk-engine.ts` 리스크 신호 클라이언트 계산
+- `src/components/` UI 컴포넌트
+- `public/` 정적 자산
+
+## 기술 스택
+
+- React 19, TypeScript 5.9
+- Vite 8
+- Tailwind CSS 4 (`@tailwindcss/vite`)
+- ESLint (flat config, typescript-eslint)
