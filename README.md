@@ -6,49 +6,97 @@ TeamPulse의 프론트엔드(React + Vite + TypeScript).
 - 백엔드 API: https://teampulse-api.duckdns.org
 - Backend repo: https://github.com/Konkuk-TeamPulse/TeamPulse-backend
 
-## 환경변수
+---
 
-`.env.example`을 복사하여 `.env`를 생성한다.
+# TeamPulse
 
-```env
-VITE_API_BASE_URL=https://teampulse-api.duckdns.org
-```
+팀 프로젝트 협업과 일정 관리를 위한 웹 서비스입니다.
 
-로컬 백엔드와 함께 띄울 때는 `VITE_API_BASE_URL=http://localhost:8080`으로 변경한다.
+프로젝트 생성, 팀원 초대, 일정 및 출근 관리 기능을 제공하여
+팀 단위 협업을 효율적으로 지원합니다.
+
+---
+
+# 주요 기능
+
+- 회원가입 / 로그인
+- 프로젝트 생성 및 관리
+- 초대 링크 기반 팀원 초대
+- 일정 관리
+- 출근 예정 / 출근 완료 관리
+- 팀원 관리
+- 알림 기능
+- 마이페이지
+
+---
+
+## 배포 웹사이트 실행
+
+https://team-pulse-frontend.vercel.app
+위 사이트에서 바로 접속하여 사용 가능하다.
 
 ## 로컬 실행
 
-```powershell
+# 환경 변수 설정
+
+`.env`
+
+```env
+VITE_API_BASE_URL=http://localhost:8080
+```
+로컬 백엔드와 함께 띄울 때는 env파일에서 `VITE_API_BASE_URL=http://localhost:8080`으로 변경한다.
+
+# 설치 및 실행 방법 1 (클론)
+
+## Frontend
+
+```bash
+git clone https://github.com/Konkuk-TeamPulse/TeamPulse-frontend.git
+
+cd TeamPulse-frontend
+
 npm install
+
 npm run dev
 ```
 
-기본 포트 `5173`. 브라우저에서 `http://localhost:5173` 접속.
+# 설치 및 실행 방법 2 (zip파일)
 
-## 빌드
+## Frontend
+파일을 다운로드하고 압축을 푼 후 해당 최상위 폴더를 경로로 하여 위와 같이 동일하게 실행한다.
 
-```powershell
-npm run build
+```bash
+npm install
+
+npm run dev
 ```
+---
 
-`tsc -b && vite build`가 실행되며 산출물은 `dist/`에 생성된다. `npm run preview`로 프로덕션 빌드를 로컬에서 확인할 수 있다.
+# 팀원 소개
 
-## 린트
+| 이름 | 역할 |
+| --- | --- |
+| 박태희 | Frontend |
+| 한지훈 | Backend, DB관리자 |
+| 이주호 | Backend, PM |
 
-```powershell
-npm run lint
-```
+---
+
+# 로컬테스트시 프론트와 백의 url
+
+- Frontend: http://localhost:5173/
+- Backend:
+
+---
+
+# API 문서
+
+- Notion: https://river-horse-2b8.notion.site/API-343ca66e3d8680f2bdaae20f6b084d32?source=copy_link
 
 ## 배포
 
 main 브랜치에 push하면 Vercel Git 연동이 자동으로 빌드/배포한다. SPA 라우팅은 `vercel.json`의 rewrite 설정으로 처리된다 (`/(.*) -> /index.html`).
 
-## 디렉터리 구조
-
-- `src/` 화면, 컴포넌트, hooks, lib
-- `src/lib/risk-engine.ts` 리스크 신호 클라이언트 계산
-- `src/components/` UI 컴포넌트
-- `public/` 정적 자산
 
 ## 기술 스택
 
