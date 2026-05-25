@@ -59,6 +59,7 @@ function App() {
     setToast({ message, type })
   }, [])
 
+  // 서버 액션의 성공/실패 처리와 워크스페이스 갱신을 한곳에서 통일한다.
   const handleAction = useCallback(async (
     apiAction: () => Promise<WorkspaceState>,
     successMsg?: string
@@ -76,6 +77,7 @@ function App() {
 
   useEffect(() => {
     let active = true
+    // 앱 진입 시 프로젝트 목록만 먼저 확인해 온보딩/프로젝트 선택 화면을 결정한다.
     listAssignmentProjects()
       .then((nextProjects) => {
         if (!active) return
@@ -99,6 +101,7 @@ function App() {
     if (!inviteCode) return
 
     let active = true
+    // 초대 링크로 들어온 경우 로그인 전에도 초대 정보를 먼저 보여준다.
     loadInvitationInfo(inviteCode)
       .then((info) => {
         if (!active) return
@@ -115,6 +118,7 @@ function App() {
   const memberNames = useMemo(() => workspace.members.map((m) => m.name), [workspace.members])
   const defaultOwner = memberNames[0] ?? workspace.user.name
   const tasks = useMemo(() => [...workspace.tasks].sort(compareTasks), [workspace.tasks])
+  // 보드 컬럼 렌더링이 단순해지도록 상태별 업무 배열을 미리 계산한다.
   const grouped = useMemo(() => ({
     TODO: tasks.filter((t) => t.status === 'TODO'),
     DOING: tasks.filter((t) => t.status === 'DOING'),
@@ -141,6 +145,7 @@ function App() {
     }
 
     try {
+      // 초대 수락 후에는 초대 URL을 루트로 정리해 새로고침 시 같은 팝업이 반복되지 않게 한다.
       const nextWorkspace = await acceptAssignmentInvitation(invitation.inviteCode)
       setWorkspace(nextWorkspace)
       setTransport('api')
@@ -172,6 +177,7 @@ function App() {
         const inviteCode = pendingInviteCode ?? invitation?.inviteCode
 
         if (inviteCode) {
+          // 초대 수락을 위해 로그인한 흐름이면 로그인 직후 바로 팀에 합류시킨다.
           const nextWorkspace = await acceptAssignmentInvitation(inviteCode)
           setProjects(null)
           setPendingInviteCode(null)
@@ -300,6 +306,7 @@ function App() {
       return
     }
 
+    // 자기 참조는 화면에서 한 번 더 막고, 실제 의존성 생성은 API 계층에 위임한다.
     handleAction(
       () => addAssignmentTaskDependency(taskId, precedingTaskId),
       '선행 업무가 추가되었습니다.'
@@ -374,6 +381,7 @@ function App() {
       link.href = url
       link.download = 'teampulse-report.pdf'
       document.body.appendChild(link)
+      // 브라우저 다운로드 동작을 직접 트리거한 뒤 임시 URL을 바로 정리한다.
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
@@ -392,6 +400,7 @@ function App() {
 
   const removeMember = (m: Member) => {
     const currentMember = workspace.members.find((member) => member.name === workspace.user.name)
+    // 팀장 권한, 자기 자신, 남은 업무 여부를 먼저 검사해 서버 요청 전에 명확한 메시지를 준다.
     if (currentMember?.role !== 'LEADER') return showToast('팀장만 팀원을 내보낼 수 있습니다.', 'error')
     if (m.name === workspace.user.name) return showToast('자기 자신은 내보낼 수 없습니다.', 'error')
     if (workspace.members.length === 1) return showToast('최소 한 명의 팀원은 있어야 합니다.', 'error')

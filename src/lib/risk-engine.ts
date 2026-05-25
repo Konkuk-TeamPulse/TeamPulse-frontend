@@ -6,8 +6,10 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export function deriveRisks(tasks: Task[], meetings: Meeting[], members: Member[], now = new Date()): RiskSignal[] {
   const risks: RiskSignal[] = []
   const today = startOfDay(now)
+  // 완료된 업무는 현재 리스크 판단에서 제외하고, 남은 업무만 기준으로 신호를 만든다.
   const unfinished = tasks.filter((task) => task.status !== 'DONE')
 
+  // 마감일이 오늘보다 이전이면 가장 높은 위험도로 표시한다.
   const overdue = unfinished.filter((task) => {
     const dueDate = parseDate(task.dueDate)
     return dueDate ? dueDate < today : false
@@ -22,6 +24,7 @@ export function deriveRisks(tasks: Task[], meetings: Meeting[], members: Member[
     })
   }
 
+  // 아직 지나지 않았지만 2일 이내에 닿는 마감은 사전 경고로 분류한다.
   const dueSoon = unfinished.filter((task) => {
     const dueDate = parseDate(task.dueDate)
     return dueDate ? dueDate >= today && dueDate.getTime() - today.getTime() <= 2 * DAY_MS : false
@@ -36,6 +39,7 @@ export function deriveRisks(tasks: Task[], meetings: Meeting[], members: Member[
     })
   }
 
+  // 선행/후속 관계가 있는 업무는 일정 병목으로 이어질 수 있어 별도 신호로 올린다.
   const blocked = unfinished.filter((task) => task.blockers.length > 0 || task.next.length > 0)
   if (blocked.length > 0) {
     risks.push({
@@ -47,6 +51,7 @@ export function deriveRisks(tasks: Task[], meetings: Meeting[], members: Member[
     })
   }
 
+  // 한 사람에게 미완료 업무가 40% 이상 몰리면 작업 재분배가 필요한 상황으로 본다.
   const concentration = getOwnerConcentration(unfinished)
   if (concentration && unfinished.length >= 3 && concentration.count / unfinished.length >= 0.4) {
     risks.push({
@@ -72,6 +77,7 @@ export function deriveRisks(tasks: Task[], meetings: Meeting[], members: Member[
 }
 
 function getOwnerConcentration(tasks: Task[]) {
+  // 담당자별 미완료 업무 개수를 집계한 뒤 가장 많이 맡은 사람을 반환한다.
   const counts = new Map<string, number>()
   tasks.forEach((task) => counts.set(task.owner, (counts.get(task.owner) ?? 0) + 1))
   return [...counts.entries()]

@@ -20,6 +20,7 @@ export function loadWorkspace(): WorkspaceState {
       return createEmptyWorkspace()
     }
 
+    // 저장된 JSON을 그대로 복원하되, 파싱 실패 시 빈 워크스페이스로 안전하게 되돌린다.
     return JSON.parse(raw) as WorkspaceState
   } catch {
     return createEmptyWorkspace()
@@ -77,6 +78,7 @@ export function buildTask(input: {
   dueDate: string
   blockers?: string[]
 }): Task {
+  // 차단 요소가 있는 업무는 바로 눈에 띄도록 기본 우선순위를 높인다.
   return {
     id: createEntityId(),
     title: input.title,
@@ -113,6 +115,7 @@ export function buildReport(tasks: Task[], meetings: Meeting[]): Report {
   const periodStart = new Date()
   periodStart.setDate(1)
 
+  // 업무 완료나 회의 기록이 하나라도 있으면 즉시 확인 가능한 리포트로 표시한다.
   return {
     id: createEntityId(),
     label: `팀 요약 리포트 ${new Date().toLocaleDateString('ko-KR')}`,

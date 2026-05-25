@@ -33,6 +33,7 @@ function readActiveProjectId() {
   if (typeof window === 'undefined') return DEMO_PROJECT_ID
   const raw = window.localStorage.getItem('teampulse.activeProjectId')
   const parsed = raw ? Number(raw) : NaN
+  // 마지막으로 연 프로젝트를 기억해 새로고침 후에도 같은 프로젝트를 우선 로드한다.
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEMO_PROJECT_ID
 }
 
@@ -48,6 +49,7 @@ export async function loadAssignmentWorkspace() {
     throw new ApiRequestError('로그인이 필요합니다.', 401, 3001)
   }
 
+  // 사용자 정보와 프로젝트 목록은 서로 의존하지 않으므로 동시에 요청해 초기 진입 시간을 줄인다.
   const [user, projects] = await Promise.all([
     userApi.me(),
     projectApi.list(),
@@ -67,6 +69,7 @@ export async function loadAssignmentWorkspace() {
   const selected = projects.find((project) => project.projectId === activeProjectId) ?? projects[0]
   saveActiveProjectId(selected.projectId)
 
+  // 화면에서 쓰는 단일 WorkspaceState 형태로 서버 데이터를 합친다.
   return loadWorkspaceByProject(selected.projectId, user, selected)
 }
 
@@ -137,6 +140,7 @@ export async function createAssignmentTask(input: {
   const members = await memberApi.list(activeProjectId)
   const assignee = findMemberByName(members, input.owner)
 
+  // 백엔드는 선행 업무를 별도 의존성 API로 관리하므로, 생성 후 필요할 때 관계를 추가한다.
   const created = await taskApi.create(activeProjectId, {
     title: input.title,
     description: input.blockers.length ? `Blockers: ${input.blockers.join(', ')}` : undefined,
@@ -153,6 +157,7 @@ export async function createAssignmentTask(input: {
 
   if (!precedingTask) return workspace
 
+  // 의존성 추가 직후 응답에 제목이 반영되지 않을 수 있어, 현재 화면 상태에 즉시 보강한다.
   return {
     ...workspace,
     tasks: workspace.tasks.map((task) => task.id === created.taskId ? {
@@ -237,6 +242,7 @@ export async function createAssignmentMeeting(input: {
   const attendeeIds = mapAttendeeIds(members, input.attendees)
   const meetingDate = input.time.slice(0, 10)
 
+  // 회의의 액션 아이템은 기본적으로 회의일 기준 7일 뒤를 마감일로 둔다.
   await meetingApi.create(activeProjectId, {
     title: input.title,
     meetingDate,
@@ -253,6 +259,7 @@ export async function createAssignmentMeeting(input: {
   })
 
   if (input.createTasks) {
+    // 후속 조치 업무 생성 실패가 회의록 저장 자체를 취소하지 않도록 개별 실패를 흡수한다.
     await Promise.all(input.actions.map((title) => taskApi.create(activeProjectId, {
       title,
       description: `회의 "${input.title}"에서 생성된 후속 조치입니다.`,
@@ -367,6 +374,7 @@ export async function deleteAssignmentMember(memberId: number) {
 }
 
 async function loadWorkspaceByProject(projectId: number, knownUser?: UserMe, summary?: ProjectSummary): Promise<WorkspaceState> {
+  // 일부 보조 API가 실패해도 화면 전체가 멈추지 않도록 allSettled로 가능한 데이터만 합친다.
   const [
     userResult,
     projectResult,
@@ -403,6 +411,7 @@ async function loadWorkspaceByProject(projectId: number, knownUser?: UserMe, sum
   const risks = settledValue(risksResult)
   const dashboard = settledValue(dashboardResult)
 
+  // 여러 백엔드 응답 형식을 프론트엔드가 공통으로 사용하는 WorkspaceState로 정규화한다.
   return {
     initialized: Boolean(project.projectName),
     user: {
@@ -453,6 +462,7 @@ function mapMember(member: MemberSummary): Member {
 function mapTasks(tasks: TaskSummary[]): Task[] {
   const titleById = new Map(tasks.map((task) => [task.taskId, task.title]))
 
+  // 백엔드는 선행 업무를 ID 배열로 내려주므로, 보드 표시용 제목 배열로 변환한다.
   return tasks.map((task) => ({
     id: task.taskId,
     title: task.title,
@@ -474,6 +484,7 @@ function mapMeeting(meeting: MeetingSummary, members: MemberSummary[]): Meeting 
     .map((memberId) => memberNameById.get(memberId))
     .filter((name): name is string => Boolean(name))
 
+  // 참석자 목록이 비어 있으면 작성자를 대체값으로 사용해 카드가 비어 보이지 않게 한다.
   return {
     id: meeting.meetingId,
     title: meeting.title,
@@ -502,6 +513,7 @@ function mapActivity(log: ActivityLog): Activity {
 
 function mapRisks(risks?: RisksResult | BackendRisk[], dashboard?: DashboardResult): RiskSignal[] {
   if (Array.isArray(risks)) {
+    // 이미 프론트엔드 RiskSignal 형태로 온 데이터는 최소 변환만 수행한다.
     return risks.map((risk) => ({
       id: risk.id,
       severity: risk.severity,
@@ -513,6 +525,7 @@ function mapRisks(risks?: RisksResult | BackendRisk[], dashboard?: DashboardResu
 
   const source = risks?.risks ?? dashboard?.risks ?? []
 
+  // 프로젝트 리스크 API가 비어 있으면 대시보드 리스크를 대체 소스로 사용한다.
   return source.map((risk, index) => ({
     id: index + 1,
     severity: mapRiskSeverity(risk.level),
@@ -554,6 +567,7 @@ function mapAttendeeIds(members: MemberSummary[], attendeeNames: string[]) {
     .map((name) => members.find((member) => member.name === name)?.memberId)
     .filter((memberId): memberId is number => typeof memberId === 'number')
 
+  // 같은 참석자를 여러 번 선택해도 서버에는 중복 없는 ID 목록만 전달한다.
   return Array.from(new Set(attendeeIds))
 }
 

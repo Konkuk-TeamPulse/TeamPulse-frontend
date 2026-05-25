@@ -35,6 +35,7 @@ export function TaskBoard({
 
   const handleAddDependency = (task: Task) => {
     const precedingTaskId = dependencyForms[task.id] ? Number(dependencyForms[task.id]) : undefined
+    // 선행 업무가 비어 있거나 자기 자신이면 관계를 만들 수 없도록 보드에서 먼저 막는다.
     if (!precedingTaskId) return showToast('선행 업무를 선택해주세요.', 'error')
     if (precedingTaskId === task.id) return showToast('자기 자신을 선행 업무로 설정할 수 없습니다.', 'error')
 
@@ -48,6 +49,7 @@ export function TaskBoard({
   }
 
   const submitEdit = (task: Task) => {
+    // 수정 폼은 서버 요청 전에 필수값을 모두 검증해 잘못된 빈 업무가 저장되지 않게 한다.
     if (!editForm.title.trim()) return showToast('업무 제목을 입력해주세요.', 'error')
     if (!editForm.owner) return showToast('담당자를 선택해주세요.', 'error')
     if (!editForm.dueDate) return showToast('마감일을 선택해주세요.', 'error')
@@ -133,6 +135,7 @@ export function TaskBoard({
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {task.blockers.map((blocker, index) => {
+                        // 화면에는 선행 업무 제목만 보관하므로, 삭제 요청에 필요한 ID를 전체 업무 목록에서 다시 찾는다.
                         const dependencyId = tasks.find((candidate) => candidate.title === blocker)?.id
                         return (
                           <button

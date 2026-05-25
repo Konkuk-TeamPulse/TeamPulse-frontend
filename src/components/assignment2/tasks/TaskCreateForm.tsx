@@ -15,6 +15,7 @@ export function TaskCreateForm({ tasks, memberNames, defaultOwner, onAddTask, sh
 
   const handleSubmit = () => {
     const title = form.title.trim()
+    // 업무 생성 전에 제목 중복과 필수값을 확인해 보드의 기본 데이터 품질을 지킨다.
     if (!title) return showToast('할 일 제목을 입력해주세요.', 'error')
     if (tasks.some((task) => task.title.trim() === title)) return showToast('이미 있는 업무입니다.', 'error')
     if (!form.dueDate) return showToast('마감일을 선택해주세요.', 'error')
