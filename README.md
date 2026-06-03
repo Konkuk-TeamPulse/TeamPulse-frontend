@@ -12,7 +12,7 @@ TeamPulse의 프론트엔드(React + Vite + TypeScript).
 
 팀 프로젝트 협업과 일정 관리를 위한 웹 서비스입니다.
 
-프로젝트 생성, 팀원 초대, 일정 및 출근 관리 기능을 제공하여
+프로젝트 생성, 팀원 초대, 태스크 관리, 회의록, 리스크 확인, 리포트 다운로드 기능을 제공하여
 팀 단위 협업을 효율적으로 지원합니다.
 
 ---
@@ -42,12 +42,23 @@ https://team-pulse-frontend.vercel.app
 
 # 환경 변수 설정
 
-`.env`
+`.env.example`을 복사해 `.env`를 만들고 로컬 백엔드 주소를 설정한다.
+
+```bash
+cp .env.example .env
+```
+
+Windows PowerShell에서는 아래 명령을 사용할 수 있다.
+
+```powershell
+Copy-Item .env.example .env
+```
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080
 ```
-로컬 백엔드와 함께 띄울 때는 env파일에서 `VITE_API_BASE_URL=http://localhost:8080`으로 변경한다.
+
+로컬 백엔드와 함께 띄울 때는 `VITE_API_BASE_URL=http://localhost:8080`을 사용한다. 운영 백엔드에 붙일 때는 `https://teampulse-api.duckdns.org`로 설정한다.
 
 # 설치 및 실행 방법 1 (클론)
 
@@ -88,7 +99,7 @@ npm run dev
 # 로컬테스트시 프론트와 백의 url
 
 - Frontend: http://localhost:5173/
-- Backend:
+- Backend: http://localhost:8080
 
 ---
 

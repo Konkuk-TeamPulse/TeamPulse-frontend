@@ -2,6 +2,8 @@ import type { ErrorResult, LegacyApiResponse, SpecResponse } from './types'
 
 const ACCESS_TOKEN_KEY = 'teampulse.accessToken'
 const REFRESH_TOKEN_KEY = 'teampulse.refreshToken'
+const MISSING_API_BASE_URL_MESSAGE =
+  'VITE_API_BASE_URL is required. Copy .env.example to .env and set the backend URL.'
 
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim()
 
@@ -54,6 +56,10 @@ export async function requestJson<T>(
   init: RequestInit = {},
   auth = true,
 ): Promise<T> {
+  if (!apiBaseUrl) {
+    throw new ApiRequestError(MISSING_API_BASE_URL_MESSAGE, 0)
+  }
+
   const token = auth ? getAccessToken() : null
   const headers = new Headers(init.headers)
 
@@ -74,6 +80,10 @@ export async function requestJson<T>(
   const payload = contentType.includes('application/json')
     ? await response.json()
     : null
+
+  if (auth && response.status === 401) {
+    clearAuthTokens()
+  }
 
   if (payload && typeof payload === 'object' && 'isSuccess' in payload) {
     const spec = payload as SpecResponse<T | ErrorResult | null>
