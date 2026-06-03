@@ -1,4 +1,4 @@
-import { ApiRequestError, apiBaseUrl, getAccessToken, requestJson } from './client'
+import { ApiRequestError, getAccessToken, requestJson, requireApiBaseUrl } from './client'
 import type { ReportCreateResult } from './types'
 
 export const reportApi = {
@@ -12,6 +12,7 @@ export const reportApi = {
     )
   },
   async download(reportId: number) {
+    const baseUrl = requireApiBaseUrl()
     const token = getAccessToken()
     const headers = new Headers()
     if (token) {
@@ -19,7 +20,7 @@ export const reportApi = {
     }
 
     const response = await fetch(
-      `${apiBaseUrl}/api/reports/${reportId}/download`,
+      `${baseUrl}/api/reports/${reportId}/download`,
       { headers },
     )
     if (!response.ok) {

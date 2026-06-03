@@ -11,6 +11,13 @@ export const apiBaseUrl = configuredBaseUrl
   ? configuredBaseUrl.replace(/\/$/, '')
   : ''
 
+export function requireApiBaseUrl() {
+  if (!apiBaseUrl) {
+    throw new ApiRequestError(MISSING_API_BASE_URL_MESSAGE, 0)
+  }
+  return apiBaseUrl
+}
+
 export class ApiRequestError extends Error {
   status: number
   responseCode?: number
@@ -56,9 +63,7 @@ export async function requestJson<T>(
   init: RequestInit = {},
   auth = true,
 ): Promise<T> {
-  if (!apiBaseUrl) {
-    throw new ApiRequestError(MISSING_API_BASE_URL_MESSAGE, 0)
-  }
+  const baseUrl = requireApiBaseUrl()
 
   const token = auth ? getAccessToken() : null
   const headers = new Headers(init.headers)
@@ -71,7 +76,7 @@ export async function requestJson<T>(
     headers.set('Authorization', token.startsWith('Bearer ') ? token : `Bearer ${token}`)
   }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers,
   })
