@@ -127,6 +127,7 @@ function TeamPulsePageContent({
       workspace={state.workspace}
       onSaveTeam={actions.saveTeam}
       onRemoveMember={actions.removeMember}
+      onLeaveProject={actions.leaveProject}
       onRegenerateInvite={actions.regenerateInvite}
       showToast={showToast}
     />

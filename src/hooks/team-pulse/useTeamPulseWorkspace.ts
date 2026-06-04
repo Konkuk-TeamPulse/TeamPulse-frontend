@@ -61,7 +61,7 @@ export function useTeamPulseWorkspace(showToast: ShowToast) {
   const taskActions = useTaskActions(runWorkspaceAction, showToast)
   const meetingActions = useMeetingActions(runWorkspaceAction, setWorkspace, showToast)
   const reportActions = useReportActions({ runWorkspaceAction, showToast, transport })
-  const teamActions = useTeamActions(workspace, runWorkspaceAction, showToast)
+  const teamActions = useTeamActions(workspace, runWorkspaceAction, showToast, setters)
 
   return {
     state: {
