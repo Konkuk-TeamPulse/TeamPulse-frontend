@@ -5,6 +5,7 @@ export type MemberRole = 'LEADER' | 'MEMBER'
 export type Member = {
   id: number
   name: string
+  email: string
   role: MemberRole
 }
 

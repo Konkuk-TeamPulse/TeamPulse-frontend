@@ -29,6 +29,7 @@ export function mapMember(member: MemberSummary): Member {
   return {
     id: member.memberId,
     name: member.name,
+    email: member.email,
     role: member.role,
   }
 }

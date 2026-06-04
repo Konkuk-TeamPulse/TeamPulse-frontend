@@ -6,6 +6,7 @@ interface TeamPageProps {
   workspace: WorkspaceState
   onSaveTeam: (team: { name: string; courseName: string; semester: string; dueDate: string }) => void
   onRemoveMember: (member: Member) => void
+  onLeaveProject: () => void
   onRegenerateInvite: () => void
   showToast: (msg: string, type?: 'success' | 'error') => void
 }
@@ -14,10 +15,11 @@ export function TeamPage({
   workspace,
   onSaveTeam,
   onRemoveMember,
+  onLeaveProject,
   onRegenerateInvite,
   showToast
 }: TeamPageProps) {
-  const currentMember = workspace.members.find((member) => member.name === workspace.user.name)
+  const currentMember = workspace.members.find((member) => member.email === workspace.user.email)
   const canRemoveMembers = currentMember?.role === 'LEADER'
   const [teamForm, setTeamForm] = useState({
     name: workspace.team.name,
@@ -98,6 +100,24 @@ export function TeamPage({
               <p className="mt-2 text-xs font-bold text-slate-500">만료: {workspace.team.inviteExpiredAt}</p>
             )}
           </div>
+
+          <div className="mt-8 border-t border-slate-200 pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <strong className="block text-sm font-bold text-slate-950">팀 탈퇴</strong>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  팀원은 언제든 탈퇴할 수 있으며, 팀장은 모든 팀원을 내보낸 뒤 탈퇴할 수 있습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={`${buttonGhostClassName} border-rose-200 text-rose-600 hover:bg-rose-50`}
+                onClick={onLeaveProject}
+              >
+                팀에서 탈퇴
+              </button>
+            </div>
+          </div>
         </Section>
       </div>
 
@@ -106,7 +126,7 @@ export function TeamPage({
         
         <div className="grid gap-4">
           {workspace.members.map((member) => {
-            const isCurrentUser = member.name === workspace.user.name
+            const isCurrentUser = member.email === workspace.user.email
 
             return (
               <article key={member.id} className="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

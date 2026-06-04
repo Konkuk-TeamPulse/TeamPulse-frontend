@@ -1,6 +1,6 @@
 import { ApiRequestError, invitationApi, memberApi, projectApi } from '..'
-import { getActiveProjectId } from './active-project'
-import { loadTeamPulseWorkspace, loadWorkspaceByProject } from './workspace-api'
+import { getActiveProjectId, resetActiveProjectId } from './active-project'
+import { loadWorkspaceByProject } from './workspace-api'
 
 export async function updateTeamPulseTeam(input: {
   name: string
@@ -39,7 +39,7 @@ export async function regenerateTeamPulseInviteCode() {
 export async function deleteTeamPulseMember(memberId: number) {
   const activeProjectId = getActiveProjectId()
   const workspace = await loadWorkspaceByProject(activeProjectId)
-  const currentMember = workspace.members.find((member) => member.name === workspace.user.name)
+  const currentMember = workspace.members.find((member) => member.email === workspace.user.email)
   const target = workspace.members.find((member) => member.id === memberId)
 
   if (currentMember?.role !== 'LEADER') {
@@ -48,10 +48,19 @@ export async function deleteTeamPulseMember(memberId: number) {
   if (!target) {
     throw new ApiRequestError('내보낼 팀원을 찾을 수 없습니다.', 404)
   }
-  if (target.name === workspace.user.name) {
-    throw new ApiRequestError('자기 자신은 내보낼 수 없습니다.', 400)
+  if (target.email === workspace.user.email) {
+    throw new ApiRequestError('본인은 내보낼 수 없습니다.', 400)
   }
 
   await memberApi.remove(activeProjectId, memberId)
-  return loadTeamPulseWorkspace()
+  return loadWorkspaceByProject(activeProjectId)
+}
+
+export async function leaveTeamPulseProject() {
+  const activeProjectId = getActiveProjectId()
+
+  await memberApi.leave(activeProjectId)
+  resetActiveProjectId()
+
+  return projectApi.list()
 }
