@@ -1,6 +1,5 @@
 import { ApiRequestError, invitationApi, memberApi, projectApi } from '..'
 import { getActiveProjectId, resetActiveProjectId } from './active-project'
-import { mapMember } from './mappers'
 import { loadWorkspaceByProject } from './workspace-api'
 
 export async function updateTeamPulseTeam(input: {
@@ -54,12 +53,7 @@ export async function deleteTeamPulseMember(memberId: number) {
   }
 
   await memberApi.remove(activeProjectId, memberId)
-  const members = await memberApi.list(activeProjectId)
-
-  return {
-    ...workspace,
-    members: members.map(mapMember),
-  }
+  return loadWorkspaceByProject(activeProjectId)
 }
 
 export async function leaveTeamPulseProject() {
