@@ -81,8 +81,8 @@ function TeamPulsePageContent({
     return (
       <TasksPage
         grouped={state.grouped}
-        memberNames={state.memberNames}
-        defaultOwner={state.defaultOwner}
+        members={state.workspace.members}
+        defaultOwnerId={state.defaultOwnerId}
         onAddTask={actions.addTask}
         tasks={state.tasks}
         onUpdateStatus={actions.updateTaskStatus}

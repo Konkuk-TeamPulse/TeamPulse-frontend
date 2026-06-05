@@ -1,27 +1,29 @@
 import { useState, type FormEvent } from 'react'
 import { Section, Field, inputClassName, buttonPrimaryClassName } from '../ui/Common'
 import type { Task } from '../../../types/shell'
+import type { Member } from '../../../types/workspace'
 
 interface TaskCreateFormProps {
   tasks: Task[]
-  memberNames: string[]
-  defaultOwner: string
-  onAddTask: (task: { title: string; owner: string; dueDate: string; blockers: string; precedingTaskId?: number }) => void
+  members: Member[]
+  defaultOwnerId: number
+  onAddTask: (task: { title: string; ownerId: number; dueDate: string; blockers: string; precedingTaskId?: number }) => void
   showToast: (msg: string, type?: 'success' | 'error') => void
 }
 
-export function TaskCreateForm({ tasks, memberNames, defaultOwner, onAddTask, showToast }: TaskCreateFormProps) {
-  const [form, setForm] = useState({ title: '', owner: defaultOwner, dueDate: '', precedingTaskId: '' })
+export function TaskCreateForm({ tasks, members, defaultOwnerId, onAddTask, showToast }: TaskCreateFormProps) {
+  const [form, setForm] = useState({ title: '', ownerId: String(defaultOwnerId || ''), dueDate: '', precedingTaskId: '' })
 
   const handleSubmit = () => {
     const title = form.title.trim()
     if (!title) return showToast('할 일 제목을 입력해주세요.', 'error')
+    if (!form.ownerId) return showToast('담당자를 선택해주세요.', 'error')
     if (tasks.some((task) => task.title.trim() === title)) return showToast('이미 있는 업무입니다.', 'error')
     if (!form.dueDate) return showToast('마감일을 선택해주세요.', 'error')
 
     onAddTask({
       title,
-      owner: form.owner,
+      ownerId: Number(form.ownerId),
       dueDate: form.dueDate,
       blockers: '',
       precedingTaskId: form.precedingTaskId ? Number(form.precedingTaskId) : undefined,
@@ -49,10 +51,13 @@ export function TaskCreateForm({ tasks, memberNames, defaultOwner, onAddTask, sh
         <Field label="담당자">
           <select
             className={inputClassName}
-            value={form.owner}
-            onChange={(e) => setForm({ ...form, owner: e.target.value })}
+            value={form.ownerId}
+            onChange={(e) => setForm({ ...form, ownerId: e.target.value })}
           >
-            {memberNames.map((name) => <option key={name} value={name}>{name}</option>)}
+            <option value="">담당자 선택</option>
+            {members.map((member) => (
+              <option key={member.id} value={member.id}>{member.name} ({member.email})</option>
+            ))}
           </select>
         </Field>
         <Field label="마감일">

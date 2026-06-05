@@ -1,14 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { Empty, Pill } from '../ui/Common'
 import type { Task, TaskStatus } from '../../../types/shell'
+import type { Member } from '../../../types/workspace'
 import { TaskEditForm, type TaskEditFormValue } from './TaskEditForm'
 
 interface TaskBoardProps {
   grouped: Record<TaskStatus, Task[]>
   tasks: Task[]
-  memberNames: string[]
+  members: Member[]
   onUpdateStatus: (taskId: number, status: TaskStatus) => void
-  onEditTask: (taskId: number, task: { title: string; owner: string; dueDate: string }) => void
+  onEditTask: (taskId: number, task: { title: string; ownerId: number; dueDate: string }) => void
   onAddDependency: (taskId: number, precedingTaskId: number) => void
   onRemoveDependency: (taskId: number, dependencyId: number) => void
   onRemoveTask: (taskId: number) => void
@@ -20,7 +21,7 @@ interface TaskBoardProps {
 export function TaskBoard({
   grouped,
   tasks,
-  memberNames,
+  members,
   onUpdateStatus,
   onEditTask,
   onAddDependency,
@@ -32,7 +33,7 @@ export function TaskBoard({
 }: TaskBoardProps) {
   const [dependencyForms, setDependencyForms] = useState<Record<number, string>>({})
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState<TaskEditFormValue>({ title: '', owner: '', dueDate: '' })
+  const [editForm, setEditForm] = useState<TaskEditFormValue>({ title: '', ownerId: '', dueDate: '' })
 
   const handleAddDependency = (task: Task) => {
     const precedingTaskId = dependencyForms[task.id] ? Number(dependencyForms[task.id]) : undefined
@@ -44,16 +45,22 @@ export function TaskBoard({
   }
 
   const startEdit = (task: Task) => {
+    const owner = members.find((member) => member.name === task.owner)
+
     setEditingTaskId(task.id)
-    setEditForm({ title: task.title, owner: task.owner, dueDate: task.dueDate })
+    setEditForm({ title: task.title, ownerId: owner ? String(owner.id) : '', dueDate: task.dueDate })
   }
 
   const submitEdit = (task: Task) => {
     if (!editForm.title.trim()) return showToast('업무 제목을 입력해주세요.', 'error')
-    if (!editForm.owner) return showToast('담당자를 선택해주세요.', 'error')
+    if (!editForm.ownerId) return showToast('담당자를 선택해주세요.', 'error')
     if (!editForm.dueDate) return showToast('마감일을 선택해주세요.', 'error')
 
-    onEditTask(task.id, editForm)
+    onEditTask(task.id, {
+      title: editForm.title,
+      ownerId: Number(editForm.ownerId),
+      dueDate: editForm.dueDate,
+    })
     setEditingTaskId(null)
   }
 
@@ -77,7 +84,7 @@ export function TaskBoard({
                 {editingTaskId === task.id ? (
                   <TaskEditForm
                     editForm={editForm}
-                    memberNames={memberNames}
+                    members={members}
                     onCancel={() => setEditingTaskId(null)}
                     onChange={setEditForm}
                     onSubmit={handleEditSubmit}
