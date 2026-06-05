@@ -136,6 +136,7 @@ export function TeamPage({
                   </div>
                   <div className="min-w-0">
                     <strong className="block truncate text-sm font-bold tracking-tight text-slate-950">{member.name}</strong>
+                    <span className="mt-0.5 block truncate text-xs font-medium text-slate-500">{member.email}</span>
                     <div className="mt-1 flex items-center gap-2">
                       <Pill tone={member.role === 'LEADER' ? 'accent' : 'muted'}>{member.role === 'LEADER' ? '팀장' : '팀원'}</Pill>
                       {isCurrentUser && <Pill tone="good">본인</Pill>}
