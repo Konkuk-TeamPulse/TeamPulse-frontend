@@ -40,6 +40,7 @@ export function useTeamPulseWorkspace(showToast: ShowToast) {
 
   const memberNames = useMemo(() => workspace.members.map((member) => member.name), [workspace.members])
   const defaultOwner = memberNames[0] ?? workspace.user.name
+  const defaultOwnerId = workspace.members[0]?.id ?? 0
   const tasks = useMemo(() => [...workspace.tasks].sort(compareTasks), [workspace.tasks])
   const grouped = useMemo(() => ({
     TODO: tasks.filter((task) => task.status === 'TODO'),
@@ -67,6 +68,7 @@ export function useTeamPulseWorkspace(showToast: ShowToast) {
     state: {
       completion,
       defaultOwner,
+      defaultOwnerId,
       grouped,
       invitation,
       isBusy,

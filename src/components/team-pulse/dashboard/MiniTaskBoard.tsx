@@ -19,7 +19,9 @@ export function MiniTaskBoard({ tasks, doneCount, formatDate }: { tasks: Task[];
               {tasks.filter((task) => task.status === status).slice(0, 3).map((task) => (
                 <article key={task.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                   <strong className="block text-sm font-bold text-slate-950">{task.title}</strong>
-                  <p className="mt-2 text-xs font-medium text-slate-500">{task.owner} · {formatDate(task.dueDate)}</p>
+                  <p className="mt-2 truncate text-xs font-medium text-slate-500">
+                    {task.ownerEmail ? `${task.owner} (${task.ownerEmail})` : task.owner} · {formatDate(task.dueDate)}
+                  </p>
                   {task.blockers.length > 0 && <p className="mt-3 text-xs font-semibold text-rose-600">선행 업무: {task.blockers.join(', ')}</p>}
                 </article>
               ))}

@@ -1,15 +1,16 @@
 import { TaskBoard } from '../../components/team-pulse/tasks/TaskBoard'
 import { TaskCreateForm } from '../../components/team-pulse/tasks/TaskCreateForm'
 import type { Task, TaskStatus } from '../../types/shell'
+import type { Member } from '../../types/workspace'
 
 interface TasksPageProps {
   grouped: Record<TaskStatus, Task[]>
   tasks: Task[]
-  memberNames: string[]
-  defaultOwner: string
-  onAddTask: (task: { title: string; owner: string; dueDate: string; blockers: string; precedingTaskId?: number }) => void
+  members: Member[]
+  defaultOwnerId: number
+  onAddTask: (task: { title: string; ownerId: number; dueDate: string; blockers: string; precedingTaskId?: number }) => void
   onUpdateStatus: (taskId: number, status: TaskStatus) => void
-  onEditTask: (taskId: number, task: { title: string; owner: string; dueDate: string }) => void
+  onEditTask: (taskId: number, task: { title: string; ownerId: number; dueDate: string }) => void
   onAddDependency: (taskId: number, precedingTaskId: number) => void
   onRemoveDependency: (taskId: number, dependencyId: number) => void
   onRemoveTask: (taskId: number) => void
@@ -21,8 +22,8 @@ interface TasksPageProps {
 export function TasksPage({
   grouped,
   tasks,
-  memberNames,
-  defaultOwner,
+  members,
+  defaultOwnerId,
   onAddTask,
   onUpdateStatus,
   onEditTask,
@@ -35,7 +36,7 @@ export function TasksPage({
 }: TasksPageProps) {
   return (
     <div className="space-y-8 pb-20 lg:pb-0">
-      <TaskCreateForm tasks={tasks} memberNames={memberNames} defaultOwner={defaultOwner} onAddTask={onAddTask} showToast={showToast} />
+      <TaskCreateForm tasks={tasks} members={members} defaultOwnerId={defaultOwnerId} onAddTask={onAddTask} showToast={showToast} />
 
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-extrabold text-slate-950">업무 보드</h2>
@@ -45,7 +46,7 @@ export function TasksPage({
       <TaskBoard
         grouped={grouped}
         tasks={tasks}
-        memberNames={memberNames}
+        members={members}
         onUpdateStatus={onUpdateStatus}
         onEditTask={onEditTask}
         onAddDependency={onAddDependency}

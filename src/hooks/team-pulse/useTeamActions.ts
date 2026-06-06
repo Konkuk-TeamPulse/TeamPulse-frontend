@@ -26,7 +26,10 @@ export function useTeamActions(
     if (currentMember?.role !== 'LEADER') return showToast('팀장만 팀원을 내보낼 수 있습니다.', 'error')
     if (member.email === workspace.user.email) return showToast('본인은 내보낼 수 없습니다.', 'error')
     if (workspace.members.length === 1) return showToast('최소 한 명의 팀원은 있어야 합니다.', 'error')
-    if (workspace.tasks.some((task) => task.owner === member.name && task.status !== 'DONE')) {
+    if (workspace.tasks.some((task) => (
+      (task.ownerId === member.id || (!task.ownerId && task.ownerEmail === member.email))
+      && task.status !== 'DONE'
+    ))) {
       return showToast('완료되지 않은 업무가 있는 팀원은 내보낼 수 없습니다.', 'error')
     }
 

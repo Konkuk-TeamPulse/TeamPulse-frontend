@@ -1,24 +1,25 @@
 import { memberApi, taskApi } from '..'
 import type { TaskStatus } from '../../types/shell'
 import { getActiveProjectId } from './active-project'
-import { findMemberByName } from './helpers'
+import { findMemberById } from './helpers'
 import { loadWorkspaceByProject } from './workspace-api'
 
 export async function createTeamPulseTask(input: {
   title: string
-  owner: string
+  ownerId: number
   dueDate: string
   blockers: string[]
   precedingTaskId?: number
 }) {
   const activeProjectId = getActiveProjectId()
   const members = await memberApi.list(activeProjectId)
-  const assignee = findMemberByName(members, input.owner)
+  const assignee = findMemberById(members, input.ownerId)
 
   const created = await taskApi.create(activeProjectId, {
     title: input.title,
     description: input.blockers.length ? `Blockers: ${input.blockers.join(', ')}` : undefined,
     assigneeId: assignee.memberId,
+    assigneeEmail: assignee.email,
     dueDate: input.dueDate,
   })
 
@@ -48,12 +49,12 @@ export async function updateTeamPulseTaskStatus(taskId: number, status: TaskStat
 export async function updateTeamPulseTask(input: {
   taskId: number
   title?: string
-  owner?: string
+  ownerId?: number
   dueDate?: string
 }) {
   const activeProjectId = getActiveProjectId()
-  const members = input.owner ? await memberApi.list(activeProjectId) : []
-  const assignee = input.owner ? findMemberByName(members, input.owner) : undefined
+  const members = input.ownerId ? await memberApi.list(activeProjectId) : []
+  const assignee = input.ownerId ? findMemberById(members, input.ownerId) : undefined
 
   await taskApi.update(input.taskId, {
     title: input.title,

@@ -12,6 +12,14 @@ export function findMemberByName(members: MemberSummary[], name: string) {
   return member
 }
 
+export function findMemberById(members: MemberSummary[], memberId: number) {
+  const member = members.find((item) => item.memberId === memberId)
+  if (!member) {
+    throw new ApiRequestError('태스크를 배정할 팀원을 찾을 수 없습니다.', 400)
+  }
+  return member
+}
+
 export function mapAttendeeIds(members: MemberSummary[], attendeeNames: string[]) {
   const trimmedNames = attendeeNames.map((name) => name.trim()).filter(Boolean)
   const attendeeIds = trimmedNames

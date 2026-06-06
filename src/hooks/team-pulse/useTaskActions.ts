@@ -11,7 +11,7 @@ import type { TaskStatus } from '../../types/shell'
 import type { ShowToast, WorkspaceActionRunner } from './workspace-types'
 
 export function useTaskActions(runWorkspaceAction: WorkspaceActionRunner, showToast: ShowToast) {
-  const addTask = (form: { title: string; owner: string; dueDate: string; blockers: string; precedingTaskId?: number }) => {
+  const addTask = (form: { title: string; ownerId: number; dueDate: string; blockers: string; precedingTaskId?: number }) => {
     runWorkspaceAction(
       () => createTeamPulseTask({ ...form, blockers: parseLines(form.blockers) }),
     )
@@ -23,7 +23,7 @@ export function useTaskActions(runWorkspaceAction: WorkspaceActionRunner, showTo
     )
   }
 
-  const editTask = (taskId: number, input: { title: string; owner: string; dueDate: string }) => {
+  const editTask = (taskId: number, input: { title: string; ownerId: number; dueDate: string }) => {
     runWorkspaceAction(
       () => updateTeamPulseTask({ taskId, ...input }),
       '업무가 수정되었습니다.'

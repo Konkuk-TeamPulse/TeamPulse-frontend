@@ -28,7 +28,9 @@ export type ShellMeta = {
 export type Task = {
   id: number
   title: string
+  ownerId?: number | null
   owner: string
+  ownerEmail?: string | null
   status: TaskStatus
   dueDate: string
   priority: TaskPriority

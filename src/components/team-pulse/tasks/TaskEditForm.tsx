@@ -1,23 +1,24 @@
 import type { FormEvent } from 'react'
 import { inputClassName } from '../ui/Common'
 import type { Task } from '../../../types/shell'
+import type { Member } from '../../../types/workspace'
 
 export type TaskEditFormValue = {
   title: string
-  owner: string
+  ownerId: string
   dueDate: string
 }
 
 export function TaskEditForm({
   editForm,
-  memberNames,
+  members,
   onCancel,
   onChange,
   onSubmit,
   task,
 }: {
   editForm: TaskEditFormValue
-  memberNames: string[]
+  members: Member[]
   onCancel: () => void
   onChange: (value: TaskEditFormValue) => void
   onSubmit: (event: FormEvent<HTMLFormElement>, task: Task) => void
@@ -38,8 +39,11 @@ export function TaskEditForm({
       </label>
       <label className="grid items-center gap-2 sm:grid-cols-[56px_minmax(0,1fr)]">
         <span className="text-xs font-bold text-slate-500">담당자</span>
-        <select className={inputClassName} value={editForm.owner} onChange={(event) => onChange({ ...editForm, owner: event.target.value })}>
-          {memberNames.map((name) => <option key={name} value={name}>{name}</option>)}
+        <select className={inputClassName} value={editForm.ownerId} onChange={(event) => onChange({ ...editForm, ownerId: event.target.value })}>
+          <option value="">담당자 선택</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>{member.name} ({member.email})</option>
+          ))}
         </select>
       </label>
       <label className="grid items-center gap-2 sm:grid-cols-[56px_minmax(0,1fr)]">
