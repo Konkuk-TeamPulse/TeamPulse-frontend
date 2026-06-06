@@ -64,7 +64,9 @@ export function TaskStatusSummary({ tasks }: { tasks: Task[] }) {
           <div key={task.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
             <div className="min-w-0">
               <strong className="block truncate text-sm font-bold text-slate-900">{task.title}</strong>
-              <span className="text-xs font-medium text-slate-500">{task.owner}</span>
+              <span className="block truncate text-xs font-medium text-slate-500">
+                {task.ownerEmail ? `${task.owner} (${task.ownerEmail})` : task.owner}
+              </span>
             </div>
             <span className="text-xs font-semibold text-slate-500">{task.dueDate}</span>
           </div>

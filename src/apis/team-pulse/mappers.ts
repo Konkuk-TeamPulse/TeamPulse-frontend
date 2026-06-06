@@ -40,7 +40,9 @@ export function mapTasks(tasks: TaskSummary[]): Task[] {
   return tasks.map((task) => ({
     id: task.taskId,
     title: task.title,
+    ownerId: task.assigneeId ?? null,
     owner: task.assigneeName,
+    ownerEmail: task.assigneeEmail ?? null,
     status: task.status,
     dueDate: task.dueDate,
     priority: task.status === 'DONE' ? 'LOW' : 'MEDIUM',

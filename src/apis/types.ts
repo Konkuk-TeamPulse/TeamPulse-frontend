@@ -99,6 +99,7 @@ export type TaskCreateRequest = {
   title: string
   description?: string
   assigneeId: number
+  assigneeEmail?: string
   dueDate: string
 }
 
@@ -114,7 +115,9 @@ export type TaskSummary = {
   taskId: number
   title: string
   status: TaskStatus
+  assigneeId?: number | null
   assigneeName: string
+  assigneeEmail?: string | null
   dueDate: string
   precedingTaskIds?: number[]
 }

@@ -72,10 +72,18 @@ export function deriveRisks(tasks: Task[], meetings: Meeting[], members: Member[
 }
 
 function getOwnerConcentration(tasks: Task[]) {
-  const counts = new Map<string, number>()
-  tasks.forEach((task) => counts.set(task.owner, (counts.get(task.owner) ?? 0) + 1))
-  return [...counts.entries()]
-    .map(([owner, count]) => ({ owner, count }))
+  const counts = new Map<string, { owner: string; count: number }>()
+
+  tasks.forEach((task) => {
+    const key = task.ownerId ? String(task.ownerId) : task.owner
+    const current = counts.get(key)
+    counts.set(key, {
+      owner: task.owner,
+      count: (current?.count ?? 0) + 1,
+    })
+  })
+
+  return [...counts.values()]
     .sort((a, b) => b.count - a.count)[0]
 }
 

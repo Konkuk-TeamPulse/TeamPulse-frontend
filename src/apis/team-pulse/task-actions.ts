@@ -19,6 +19,7 @@ export async function createTeamPulseTask(input: {
     title: input.title,
     description: input.blockers.length ? `Blockers: ${input.blockers.join(', ')}` : undefined,
     assigneeId: assignee.memberId,
+    assigneeEmail: assignee.email,
     dueDate: input.dueDate,
   })
 

@@ -45,7 +45,8 @@ export function TaskBoard({
   }
 
   const startEdit = (task: Task) => {
-    const owner = members.find((member) => member.name === task.owner)
+    const owner = members.find((member) => member.id === task.ownerId)
+      ?? members.find((member) => member.email === task.ownerEmail)
 
     setEditingTaskId(task.id)
     setEditForm({ title: task.title, ownerId: owner ? String(owner.id) : '', dueDate: task.dueDate })
@@ -112,7 +113,9 @@ export function TaskBoard({
                       </div>
                     </div>
                     <div className="mt-2 flex items-center justify-between text-xs font-semibold text-slate-500">
-                      <span>{task.owner}</span>
+                      <span className="min-w-0 truncate">
+                        {task.ownerEmail ? `${task.owner} (${task.ownerEmail})` : task.owner}
+                      </span>
                       <span>{formatDate(task.dueDate)}</span>
                     </div>
                   </>
