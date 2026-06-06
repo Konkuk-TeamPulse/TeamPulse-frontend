@@ -114,7 +114,9 @@ export type TaskSummary = {
   taskId: number
   title: string
   status: TaskStatus
+  assigneeId: number | null
   assigneeName: string
+  assigneeEmail: string | null
   dueDate: string
   precedingTaskIds?: number[]
 }
